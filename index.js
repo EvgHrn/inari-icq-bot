@@ -23,7 +23,7 @@ const handlerNewMessage = new ICQ.Handler.Message(null, (bot, event) => {
         bot.sendText(chatId, 'Нет прав');
         return;
     }
-    const orderNumber = parseInt(event.text);
+    const orderNumber = strToOrderNumber(event.text.trim());
     if(orderNumber) {
         getOrderData(orderNumber, process.env.ST)
             .then((orderObj) => {
@@ -144,3 +144,19 @@ const parseOrderDataString = (str) => {
     // console.log('Order data obj: ', orderDataObj);
     return orderDataObj;
 };
+
+const strToOrderNumber = (str) => {
+    try {
+        const orderNumber = parseInt(str.replace(/ /g, ''));
+        if(orderNumber) {
+            console.log('Correct request. Order number: ', orderNumber);
+            return orderNumber;
+        } else {
+            console.log('Incorrect request. No success.');
+            return false;
+        }
+    } catch(e) {
+        console.log('Incorrect request. No success.');
+        return false;
+    }
+}
