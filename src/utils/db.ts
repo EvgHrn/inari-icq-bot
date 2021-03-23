@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 
 mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hhqiw.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`, {useNewUrlParser: true, useUnifiedTopology: true});
 
-const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'mongoose connection error:'));
-db.once('open', function() {
+const db_connection = mongoose.connection;
+db_connection.on('error', console.error.bind(console, 'mongoose connection error:'));
+db_connection.once('open', function() {
     // we're connected!
     console.info(console, 'mongoose connection success');
 
@@ -29,7 +29,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-module.exports.createUser = async (name, icqId) => {
+module.exports.createUser = async (name: string, icqId: string) => {
 
     const user = new User({ name, icqId });
 
@@ -42,7 +42,7 @@ module.exports.createUser = async (name, icqId) => {
     }
 };
 
-module.exports.getUserByName = async (name, icqId) => {
+module.exports.getUserByName = async (name: string, icqId: string) => {
 
     const user = new User({ name, icqId });
 
@@ -56,5 +56,5 @@ module.exports.getUserByName = async (name, icqId) => {
 };
 
 module.exports.getDbState = () => {
-    return db.readyState;
+    return db_connection.readyState;
 };

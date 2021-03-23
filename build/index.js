@@ -1,54 +1,59 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 // Импортируем бота
 const ICQ = require('icq-bot').default;
 const qs = require('qs');
 const fetch = require('node-fetch');
 const db = require('./utils/db');
-
 require('dotenv').config();
-
 const dbState = db.getDbState();
-
 console.info('Db state: ', dbState);
-
 // Создаём фасад пакета ICQ
 const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
-
+// @ts-ignore
 const validUsers = process.env.USERS.split(',');
-
 // Создаём обработчик для новых сообщений
 const handlerNewMessage = new ICQ.Handler.Message(null, (bot, event) => {
     // Получаем номер чата из объекта event
     const chatId = event.fromChatId;
-
     // Выводим в консоль тип события и номер чата
     console.log(`[${new Date().toLocaleString()}] new Message event.fromChatID = ${chatId}: ${event.text}`);
-
-    if(!validUsers.some((id) => id === chatId)) {
+    if (!validUsers.some((id) => id === chatId)) {
         console.log(`[${new Date().toLocaleString()}] no user: `, chatId);
         bot.sendText(chatId, 'Нет прав');
         return;
     }
     const orderNumber = strToOrderNumber(event.text.trim());
-    if(orderNumber) {
+    if (orderNumber) {
+        // @ts-ignore
         getOrderData(orderNumber, process.env.ST)
             .then((orderObj) => {
-                if(orderObj) {
-                    const text = Object.keys(orderObj).reduce((acc, key) => {
-                        acc = `${acc} ${key}: ${orderObj[key]}\n`;
-                        return acc;
-                    }, '');
-                    // console.log('Text: ', text);
-                    bot.sendText(chatId, text);
-                } else {
-                    bot.sendText(chatId, 'Ошибка');
-                }
-            })
-    } else {
+            if (orderObj) {
+                const text = Object.keys(orderObj).reduce((acc, key) => {
+                    acc = `${acc} ${key}: ${orderObj[key]}\n`;
+                    return acc;
+                }, '');
+                // console.log('Text: ', text);
+                bot.sendText(chatId, text);
+            }
+            else {
+                bot.sendText(chatId, 'Ошибка');
+            }
+        });
+    }
+    else {
         bot.sendText(chatId, 'Неверный номер');
     }
-
 });
-
 // Создаём обработчик для удалённых сообщений
 const handlerDeleteMessage = new ICQ.Handler.DeletedMessage(null, (bot, event) => {
     // Получаем номер чата из объекта event
@@ -58,7 +63,6 @@ const handlerDeleteMessage = new ICQ.Handler.DeletedMessage(null, (bot, event) =
     // Отправляем сообщение в чат отправителя
     bot.sendText(chatId, "Зачем!");
 });
-
 // Создаём обработчик для добавления пользователя
 // const handlerCommand = new ICQ.Handler.Command("update",null, (bot, event) => {
 //     let buttonOpenWeb = new ICQ.Button("Читать статьи", null, "https://fake-mm.ru")
@@ -67,57 +71,52 @@ const handlerDeleteMessage = new ICQ.Handler.DeletedMessage(null, (bot, event) =
 //     let buttonOk = new ICQ.Button("Отменить обработку", `{"name": "removeTask","id": ${id}}`)
 //     bot.sendText(event.fromChatId, "Данные в очереди на обработку ", null,null,null,[buttonOk,buttonOpenWeb ]);
 // });
-
 // Получаем диспетчер бота и добавляем в него обработчики
 bot.getDispatcher().addHandler(handlerNewMessage);
 bot.getDispatcher().addHandler(handlerDeleteMessage);
-
 // Запускаем пулинг для получения команд обработчикам
 bot.startPolling();
-
-const getOrderData = async (orderNumber, st) => {
-    if(!orderNumber) return false;
-    const result = await getRawOrderData(orderNumber, st);
+const getOrderData = (orderNumber, st) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!orderNumber)
+        return false;
+    const result = yield getRawOrderData(orderNumber, st);
     console.log(`[${new Date().toLocaleString()}] orderDataFromDb: `, result);
     let orderObj = {};
-    if("data" in result) {
+    if ("data" in result) {
         try {
             orderObj = parseOrderDataString(result.data);
-        } catch (e) {
+        }
+        catch (e) {
             return false;
         }
-    } else {
+    }
+    else {
         return false;
     }
     return orderObj;
-};
-
-const getRawOrderData = async(orderNumber, st) => {
-
+});
+const getRawOrderData = (orderNumber, st) => __awaiter(void 0, void 0, void 0, function* () {
     const queue = qs.stringify({
         "st": st,
         "orderNumber": orderNumber
     });
-
     const url = `${process.env.FTP_URL}?${queue}`;
-
     try {
-        return await fetch(url)
+        return yield fetch(url)
             .then((response) => {
-                // console.log("Order data response: ", response);
-                return response.text();
-            })
+            // console.log("Order data response: ", response);
+            return response.text();
+        })
             .then((data) => {
-                // console.log("Order data response text: ", data);
-                return JSON.parse(data);
-            });
-    } catch (e) {
+            // console.log("Order data response text: ", data);
+            return JSON.parse(data);
+        });
+    }
+    catch (e) {
         console.log(`[${new Date().toLocaleString()}] getOrderData error: `, e);
         return {};
     }
-
-};
-
+});
 const parseOrderDataString = (str) => {
     const orderDataArray = str.split(';');
     // console.log('orderDataArray: ', orderDataArray);
@@ -158,19 +157,21 @@ const parseOrderDataString = (str) => {
     // console.log('Order data obj: ', orderDataObj);
     return orderDataObj;
 };
-
 const strToOrderNumber = (str) => {
     try {
         const orderNumber = parseInt(str.replace(/ /g, ''));
-        if(orderNumber) {
+        if (orderNumber) {
             console.log('Correct request. Order number: ', orderNumber);
             return orderNumber;
-        } else {
+        }
+        else {
             console.log('Incorrect request. No success.');
             return false;
         }
-    } catch(e) {
+    }
+    catch (e) {
         console.log('Incorrect request. No success.');
         return false;
     }
-}
+};
+//# sourceMappingURL=index.js.map

@@ -2,9 +2,10 @@
   "name": "icq-orders-bot",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsc && node build/index.js"
   },
   "keywords": [],
   "author": "",
@@ -15,5 +16,10 @@
     "mongoose": "^5.12.1",
     "node-fetch": "^2.6.1",
     "qs": "^6.9.6"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.35",
+    "tslint": "^6.1.3",
+    "typescript": "^4.2.3"
   }
 }
