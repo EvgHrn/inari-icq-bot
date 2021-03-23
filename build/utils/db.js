@@ -8,6 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+Object.defineProperty(exports, "__esModule", { value: true });
 require('dotenv').config();
 const mongoose = require('mongoose');
 mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hhqiw.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -44,14 +45,13 @@ module.exports.createUser = (name, icqId) => __awaiter(void 0, void 0, void 0, f
         return false;
     }
 });
-module.exports.getUserByName = (name, icqId) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = new User({ name, icqId });
+module.exports.getUserByIcqId = (icqId) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const result = yield user.save();
-        return result ? result : false;
+        const userObj = yield User.findOne({ 'icqId': icqId }).exec();
+        return userObj ? userObj : false;
     }
-    catch (err) {
-        console.error(err);
+    catch (e) {
+        console.log("Getting user error: ", e);
         return false;
     }
 });

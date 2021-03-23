@@ -14,25 +14,34 @@ console.info('Db state: ', dbState);
 // Создаём фасад пакета ICQ
 const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
 
-// @ts-ignore
-const validUsers = process.env.USERS.split(',');
-
 // Создаём обработчик для новых сообщений
-const handlerNewMessage = new ICQ.Handler.Message(null, (bot: any, event: any) => {
+const handlerNewMessage = new ICQ.Handler.Message(null, async(bot: any, event: any) => {
     // Получаем номер чата из объекта event
     const chatId = event.fromChatId;
 
     // Выводим в консоль тип события и номер чата
     console.log(`[${new Date().toLocaleString()}] new Message event.fromChatID = ${chatId}: ${event.text}`);
 
-    if(!validUsers.some((id) => id === chatId)) {
+    if(!process.env.USERS) {
+        console.error('Env variable error');
+        return;
+    }
+
+    const user = await db.getUserByIcqId(chatId);
+
+    if(!user) {
         console.log(`[${new Date().toLocaleString()}] no user: `, chatId);
         bot.sendText(chatId, 'Нет прав');
         return;
+    } else {
+        console.log(`[${new Date().toLocaleString()}] user is valid: `, user);
     }
     const orderNumber = strToOrderNumber(event.text.trim());
     if(orderNumber) {
-        // @ts-ignore
+        if(!process.env.ST) {
+            console.error('Env variable error');
+            return;
+        }
         getOrderData(orderNumber, process.env.ST)
             .then((orderObj: any) => {
                 if(orderObj) {

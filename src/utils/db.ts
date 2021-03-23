@@ -42,15 +42,12 @@ module.exports.createUser = async (name: string, icqId: string) => {
     }
 };
 
-module.exports.getUserByName = async (name: string, icqId: string) => {
-
-    const user = new User({ name, icqId });
-
+module.exports.getUserByIcqId = async (icqId: string): Promise<boolean | UserType> => {
     try {
-        const result = await user.save();
-        return result ? result : false;
-    } catch (err) {
-        console.error(err);
+        const userObj = await User.findOne({ 'icqId': icqId }).exec();
+        return userObj ? userObj : false;
+    } catch (e) {
+        console.log("Getting user error: ", e);
         return false;
     }
 };
@@ -58,3 +55,9 @@ module.exports.getUserByName = async (name: string, icqId: string) => {
 module.exports.getDbState = () => {
     return db_connection.readyState;
 };
+
+export interface UserType {
+    name: string,
+    icqId: string,
+    subscriptions?: string[]
+}
