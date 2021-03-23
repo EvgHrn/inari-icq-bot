@@ -2,8 +2,13 @@
 const ICQ = require('icq-bot').default;
 const qs = require('qs');
 const fetch = require('node-fetch');
+const db = require('./utils/db');
 
 require('dotenv').config();
+
+const dbState = db.getDbState();
+
+console.info('Db state: ', dbState);
 
 // Создаём фасад пакета ICQ
 const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
@@ -53,6 +58,15 @@ const handlerDeleteMessage = new ICQ.Handler.DeletedMessage(null, (bot, event) =
     // Отправляем сообщение в чат отправителя
     bot.sendText(chatId, "Зачем!");
 });
+
+// Создаём обработчик для добавления пользователя
+// const handlerCommand = new ICQ.Handler.Command("update",null, (bot, event) => {
+//     let buttonOpenWeb = new ICQ.Button("Читать статьи", null, "https://fake-mm.ru")
+//     // Вызов метода сервиса обработки данных и получение ID задачи
+//     const id = service.addTask();
+//     let buttonOk = new ICQ.Button("Отменить обработку", `{"name": "removeTask","id": ${id}}`)
+//     bot.sendText(event.fromChatId, "Данные в очереди на обработку ", null,null,null,[buttonOk,buttonOpenWeb ]);
+// });
 
 // Получаем диспетчер бота и добавляем в него обработчики
 bot.getDispatcher().addHandler(handlerNewMessage);

@@ -12,6 +12,7 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "icq-bot": "^2.1.44",
+    "mongoose": "^5.12.1",
     "node-fetch": "^2.6.1",
     "qs": "^6.9.6"
   }
