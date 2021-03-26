@@ -11,7 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "date-fns": "^2.19.0",
     "dotenv": "^8.2.0",
+    "iconv-lite": "^0.6.2",
     "icq-bot": "^2.1.44",
     "mongoose": "^5.12.1",
     "node-fetch": "^2.6.1",

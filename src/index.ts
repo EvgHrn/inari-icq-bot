@@ -4,6 +4,7 @@ const ICQ = require('icq-bot').default;
 const qs = require('qs');
 const fetch = require('node-fetch');
 const db = require('./utils/db');
+const orders = require('./utils/orders');
 
 require('dotenv').config();
 
@@ -12,7 +13,7 @@ const dbState = db.getDbState();
 console.info('Db state: ', dbState);
 
 // Создаём фасад пакета ICQ
-const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
+// const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
 
 // Создаём обработчик для новых сообщений
 const handlerNewMessage = new ICQ.Handler.Message(null, async(bot: any, event: any) => {
@@ -81,11 +82,11 @@ const handlerDeleteMessage = new ICQ.Handler.DeletedMessage(null, (bot: any, eve
 // });
 
 // Получаем диспетчер бота и добавляем в него обработчики
-bot.getDispatcher().addHandler(handlerNewMessage);
-bot.getDispatcher().addHandler(handlerDeleteMessage);
+// bot.getDispatcher().addHandler(handlerNewMessage);
+// bot.getDispatcher().addHandler(handlerDeleteMessage);
 
 // Запускаем пулинг для получения команд обработчикам
-bot.startPolling();
+// bot.startPolling();
 
 const getOrderData = async (orderNumber: number, st: string) => {
     if(!orderNumber) return false;
@@ -163,12 +164,10 @@ const parseOrderDataString = (str: string) => {
         'Заказчик',
         'Дата согласования'
     ];
-    const orderDataObj = orderDataKeys.reduce((acc: any, key, index) => {
+    return orderDataKeys.reduce((acc: any, key, index) => {
         acc[key] = orderDataArray[index][0] === "\"" ? orderDataArray[index].slice(1, orderDataArray[index].length - 1) : orderDataArray[index];
         return acc;
     }, {});
-    // console.log('Order data obj: ', orderDataObj);
-    return orderDataObj;
 };
 
 const strToOrderNumber = (str: string) => {
@@ -186,3 +185,19 @@ const strToOrderNumber = (str: string) => {
         return false;
     }
 }
+
+const updateOrdersData = async() => {
+    // get files list
+    const ordersList = await orders.getOrdersFromFtp(10, process.env.ST);
+    console.log("orders list: ", ordersList);
+    for(let i = 0; i < 20; i++) {
+        const obj = await orders.getOrderDataStr(ordersList[i], process.env.ST);
+        console.log("Order data string: ", obj.data);
+        const dateStr = await orders.getOrderFileModifiedAtStr(ordersList[i], process.env.ST);
+        console.log(`Modified for ${ordersList[i]}: `, dateStr);
+    }
+    // fill db with data string if no that order
+    // if there is order data in db, compare data string and if there are difference, notice subscribed users
+};
+
+setTimeout(updateOrdersData, 60000);

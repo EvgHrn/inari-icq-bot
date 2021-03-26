@@ -16,7 +16,7 @@ const db_connection = mongoose.connection;
 db_connection.on('error', console.error.bind(console, 'mongoose connection error:'));
 db_connection.once('open', function () {
     // we're connected!
-    console.info(console, 'mongoose connection success');
+    console.log('mongoose connection success');
 });
 const userSchema = new mongoose.Schema({
     name: {
