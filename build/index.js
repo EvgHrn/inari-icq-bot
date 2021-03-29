@@ -9,12 +9,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const date_fns_1 = require("date-fns");
 // Импортируем бота
 const ICQ = require('icq-bot').default;
 const qs = require('qs');
 const fetch = require('node-fetch');
 const db = require('./utils/db');
 const orders = require('./utils/orders');
+const parse = require('date-fns/parse');
 require('dotenv').config();
 const dbState = db.getDbState();
 console.info('Db state: ', dbState);
@@ -182,18 +184,93 @@ const strToOrderNumber = (str) => {
         return false;
     }
 };
-const updateOrdersData = () => __awaiter(void 0, void 0, void 0, function* () {
-    // get files list
-    const ordersList = yield orders.getOrdersFromFtp(10, process.env.ST);
-    console.log("orders list: ", ordersList);
-    for (let i = 0; i < 20; i++) {
-        const obj = yield orders.getOrderDataStr(ordersList[i], process.env.ST);
-        console.log("Order data string: ", obj.data);
-        const dateStr = yield orders.getOrderFileModifiedAtStr(ordersList[i], process.env.ST);
-        console.log(`Modified for ${ordersList[i]}: `, dateStr);
+let onPriorOrdersFilesScanning = false;
+let onOtherOrdersFilesScanning = false;
+const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("orders count: ", ordersArr.length);
+    const ordersNumbersArr = ordersArr.map((order) => parseInt(order.name));
+    const ordersListFromDb = yield db.getOrdersListFromDb();
+    console.log('Orders from db: ', ordersListFromDb);
+    if (!Array.isArray(ordersListFromDb)) {
+        return false;
+    }
+    for (let i = 0; i < ordersNumbersArr.length; i++) {
+        const orderObjFromFtp = ordersArr.find((order) => order.name === (ordersNumbersArr[i].toString()));
+        if (!orderObjFromFtp) {
+            console.error("No order info for: ", ordersNumbersArr[i]);
+            continue;
+        }
+        // new order
+        if (!ordersListFromDb.includes(ordersNumbersArr[i])) {
+            console.log('We have new order: ', ordersNumbersArr[i]);
+            const obj = yield orders.getOrderDataStr(ordersNumbersArr[i], process.env.ST);
+            console.log("Order data string: ", obj.data);
+            const dateStr = orderObjFromFtp.rawModifiedAt;
+            const date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            console.log(`ModifiedAt for ${ordersNumbersArr[i]}: `, date.toLocaleString());
+            console.log('Gonna create order on db: ', ordersNumbersArr[i], obj.data, date);
+            const newOrder = yield db.createOrder(ordersNumbersArr[i], obj.data, date);
+            console.log('Created order in db: ', newOrder);
+        }
+        else {
+            console.log('Existing order: ', ordersNumbersArr[i]);
+            // compare modifiedAt dates
+            const orderFromDb = yield db.getOrderByNumber(ordersNumbersArr[i]);
+            if (!orderFromDb) {
+                continue;
+            }
+            const orderModifiedAtFromDbDate = orderFromDb.modifiedAt;
+            const dateStr = orderObjFromFtp.rawModifiedAt;
+            const orderModifiedAtStrOnFtpDate = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            if (!orderModifiedAtStrOnFtpDate) {
+                console.error('Date parsing error for: ', dateStr);
+                continue;
+            }
+            console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
+            if (!date_fns_1.isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
+                console.log('Dates NOT equal, so update');
+            }
+            else {
+                console.log('Dates equal, so do nothing');
+            }
+        }
     }
     // fill db with data string if no that order
     // if there is order data in db, compare data string and if there are difference, notice subscribed users
 });
-setTimeout(updateOrdersData, 60000);
+setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
+    if (onPriorOrdersFilesScanning)
+        return;
+    onPriorOrdersFilesScanning = true;
+    // get files list
+    const ordersInfoArr = yield orders.getOrdersInfoFromFtp(60, process.env.ST);
+    if (!ordersInfoArr) {
+        return;
+    }
+    // const ordersList = ordersInfoArr.map((orderInfo: FileInfo) => parseInt(orderInfo.name));
+    ordersInfoArr.sort((a, b) => {
+        if (a.name < b.name) {
+            return -1;
+        }
+        if (a.name > b.name) {
+            return 1;
+        }
+        console.error('Duplicate file name: ', a.name);
+        return 0;
+    });
+    const ordersArrToUpdate = ordersInfoArr.slice(ordersInfoArr.length - 1000);
+    console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
+    yield updateOrders(ordersArrToUpdate);
+    onPriorOrdersFilesScanning = false;
+}), 5000);
+// setTimeout(async() => {
+//     if(onOtherOrdersFilesScanning) return;
+//     onOtherOrdersFilesScanning = true;
+//     // get files list
+//     const ordersList = await orders.getOrdersFromFtp(60, process.env.ST);
+//     const ordersListToUpdate = ordersList.slice(0, ordersList.length - 999);
+//     console.log("Other orders: ", ordersListToUpdate);
+//     await updateOrders(ordersListToUpdate);
+//     onOtherOrdersFilesScanning = false;
+// }, 5000);
 //# sourceMappingURL=index.js.map

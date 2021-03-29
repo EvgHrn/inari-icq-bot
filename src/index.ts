@@ -1,3 +1,7 @@
+import { isEqual } from "date-fns";
+import {OrderType} from "./utils/db";
+import {FileInfo} from "./utils/orders";
+
 export {};
 // Импортируем бота
 const ICQ = require('icq-bot').default;
@@ -5,6 +9,7 @@ const qs = require('qs');
 const fetch = require('node-fetch');
 const db = require('./utils/db');
 const orders = require('./utils/orders');
+const parse = require('date-fns/parse');
 
 require('dotenv').config();
 
@@ -186,18 +191,101 @@ const strToOrderNumber = (str: string) => {
     }
 }
 
-const updateOrdersData = async() => {
-    // get files list
-    const ordersList = await orders.getOrdersFromFtp(10, process.env.ST);
-    console.log("orders list: ", ordersList);
-    for(let i = 0; i < 20; i++) {
-        const obj = await orders.getOrderDataStr(ordersList[i], process.env.ST);
-        console.log("Order data string: ", obj.data);
-        const dateStr = await orders.getOrderFileModifiedAtStr(ordersList[i], process.env.ST);
-        console.log(`Modified for ${ordersList[i]}: `, dateStr);
+let onPriorOrdersFilesScanning = false;
+let onOtherOrdersFilesScanning = false;
+
+const updateOrders = async(ordersArr: FileInfo[]) => {
+
+    console.log("orders count: ", ordersArr.length);
+
+    const ordersNumbersArr = ordersArr.map((order: FileInfo) => parseInt(order.name));
+
+    const ordersListFromDb: number[] | boolean = await db.getOrdersListFromDb();
+    console.log('Orders from db: ', ordersListFromDb);
+
+    if(!Array.isArray(ordersListFromDb)) {
+        return false;
+    }
+
+    for(let i = 0; i < ordersNumbersArr.length; i++) {
+
+        const orderObjFromFtp: FileInfo | undefined = ordersArr.find((order: FileInfo) => order.name === (ordersNumbersArr[i].toString()));
+        if(!orderObjFromFtp) {
+            console.error("No order info for: ", ordersNumbersArr[i]);
+            continue;
+        }
+
+        // new order
+        if(!ordersListFromDb.includes(ordersNumbersArr[i])) {
+            console.log('We have new order: ', ordersNumbersArr[i]);
+            const obj = await orders.getOrderDataStr(ordersNumbersArr[i], process.env.ST);
+            console.log("Order data string: ", obj.data);
+            const dateStr = orderObjFromFtp.rawModifiedAt;
+            const date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            console.log(`ModifiedAt for ${ordersNumbersArr[i]}: `, date.toLocaleString());
+            console.log('Gonna create order on db: ', ordersNumbersArr[i], obj.data, date);
+            const newOrder = await db.createOrder(ordersNumbersArr[i], obj.data, date);
+            console.log('Created order in db: ', newOrder);
+        } else {
+            console.log('Existing order: ', ordersNumbersArr[i]);
+            // compare modifiedAt dates
+            const orderFromDb: OrderType = await db.getOrderByNumber(ordersNumbersArr[i]);
+            if(!orderFromDb) {
+                continue;
+            }
+            const orderModifiedAtFromDbDate = orderFromDb.modifiedAt;
+            const dateStr = orderObjFromFtp.rawModifiedAt;
+            const orderModifiedAtStrOnFtpDate = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            if(!orderModifiedAtStrOnFtpDate) {
+                console.error('Date parsing error for: ', dateStr);
+                continue;
+            }
+            console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
+            if(!isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
+                console.log('Dates NOT equal, so update');
+
+            } else {
+                console.log('Dates equal, so do nothing');
+            }
+        }
     }
     // fill db with data string if no that order
     // if there is order data in db, compare data string and if there are difference, notice subscribed users
+
 };
 
-setTimeout(updateOrdersData, 60000);
+setTimeout(async() => {
+    if(onPriorOrdersFilesScanning) return;
+    onPriorOrdersFilesScanning = true;
+    // get files list
+    const ordersInfoArr = await orders.getOrdersInfoFromFtp(60, process.env.ST);
+    if(!ordersInfoArr) {
+        return;
+    }
+    // const ordersList = ordersInfoArr.map((orderInfo: FileInfo) => parseInt(orderInfo.name));
+    ordersInfoArr.sort((a: FileInfo, b: FileInfo) => {
+        if(a.name < b.name) {
+            return -1;
+        }
+        if(a.name > b.name) {
+            return 1
+        }
+        console.error('Duplicate file name: ', a.name);
+        return 0;
+    });
+    const ordersArrToUpdate: FileInfo[] = ordersInfoArr.slice(ordersInfoArr.length - 1000);
+    console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
+    await updateOrders(ordersArrToUpdate);
+    onPriorOrdersFilesScanning = false;
+}, 5000);
+
+// setTimeout(async() => {
+//     if(onOtherOrdersFilesScanning) return;
+//     onOtherOrdersFilesScanning = true;
+//     // get files list
+//     const ordersList = await orders.getOrdersFromFtp(60, process.env.ST);
+//     const ordersListToUpdate = ordersList.slice(0, ordersList.length - 999);
+//     console.log("Other orders: ", ordersListToUpdate);
+//     await updateOrders(ordersListToUpdate);
+//     onOtherOrdersFilesScanning = false;
+// }, 5000);

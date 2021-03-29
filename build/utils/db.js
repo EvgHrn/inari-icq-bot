@@ -33,7 +33,23 @@ const userSchema = new mongoose.Schema({
         require: false,
     }
 });
+const orderSchema = new mongoose.Schema({
+    number: {
+        type: Number,
+        require: true,
+        unique: true
+    },
+    dataString: {
+        type: String,
+        require: true
+    },
+    modifiedAt: {
+        type: Date,
+        require: true
+    }
+});
 const User = mongoose.model('User', userSchema);
+const Order = mongoose.model('Order', orderSchema);
 module.exports.createUser = (name, icqId) => __awaiter(void 0, void 0, void 0, function* () {
     const user = new User({ name, icqId });
     try {
@@ -51,11 +67,42 @@ module.exports.getUserByIcqId = (icqId) => __awaiter(void 0, void 0, void 0, fun
         return userObj ? userObj : false;
     }
     catch (e) {
-        console.log("Getting user error: ", e);
+        console.error("Getting user error: ", e);
         return false;
     }
 });
 module.exports.getDbState = () => {
     return db_connection.readyState;
 };
+module.exports.createOrder = (number, dataString, modifiedAt) => __awaiter(void 0, void 0, void 0, function* () {
+    const order = new Order({ number, dataString, modifiedAt });
+    try {
+        const result = yield order.save();
+        return result ? result : false;
+    }
+    catch (err) {
+        console.error('createOrder error: ', err);
+        return false;
+    }
+});
+module.exports.getOrderByNumber = (number) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const orderObj = yield Order.findOne({ number: number }).exec();
+        return orderObj ? orderObj : false;
+    }
+    catch (e) {
+        console.error("Getting order error: ", e);
+        return false;
+    }
+});
+module.exports.getOrdersListFromDb = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const orders = yield Order.find({}, 'number').exec();
+        return orders ? orders.map((order) => order.number) : false;
+    }
+    catch (e) {
+        console.error("Getting OrdersListFromDb error: ", e);
+        return false;
+    }
+});
 //# sourceMappingURL=db.js.map

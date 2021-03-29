@@ -1,3 +1,5 @@
+import {FileInfo} from "./orders";
+
 require('dotenv').config();
 const mongoose = require('mongoose');
 
@@ -26,7 +28,24 @@ const userSchema = new mongoose.Schema({
     }
 });
 
+const orderSchema = new mongoose.Schema({
+    number: {
+        type: Number,
+        require: true,
+        unique: true
+    },
+    dataString: {
+        type: String,
+        require: true
+    },
+    modifiedAt: {
+        type: Date,
+        require: true
+    }
+});
+
 const User = mongoose.model('User', userSchema);
+const Order = mongoose.model('Order', orderSchema);
 
 module.exports.createUser = async (name: string, icqId: string) => {
 
@@ -46,7 +65,7 @@ module.exports.getUserByIcqId = async (icqId: string): Promise<boolean | UserTyp
         const userObj = await User.findOne({ 'icqId': icqId }).exec();
         return userObj ? userObj : false;
     } catch (e) {
-        console.log("Getting user error: ", e);
+        console.error("Getting user error: ", e);
         return false;
     }
 };
@@ -55,8 +74,49 @@ module.exports.getDbState = () => {
     return db_connection.readyState;
 };
 
+module.exports.createOrder = async (number: number, dataString: string, modifiedAt: Date) => {
+
+    const order = new Order({ number, dataString, modifiedAt });
+
+    try {
+        const result = await order.save();
+        return result ? result : false;
+    } catch (err) {
+        console.error('createOrder error: ', err);
+        return false;
+    }
+};
+
+module.exports.getOrderByNumber = async (number: number) => {
+    try {
+        const orderObj = await Order.findOne({ number: number }).exec();
+        return orderObj ? orderObj : false;
+    } catch (e) {
+        console.error("Getting order error: ", e);
+        return false;
+    }
+};
+
+module.exports.getOrdersListFromDb = async(): Promise<number[] | boolean> => {
+
+    try {
+        const orders = await Order.find({}, 'number').exec();
+        return orders ? orders.map((order: any ) => order.number) : false;
+    } catch (e) {
+        console.error("Getting OrdersListFromDb error: ", e);
+        return false;
+    }
+
+};
+
 export interface UserType {
     name: string,
     icqId: string,
     subscriptions?: string[]
+}
+
+export interface OrderType {
+    number: number,
+    dataString: string,
+    modifiedAt: Date
 }
