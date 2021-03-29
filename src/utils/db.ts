@@ -87,6 +87,19 @@ module.exports.createOrder = async (number: number, dataString: string, modified
     }
 };
 
+module.exports.updateOrder = async (number: number, dataString: string, modifiedAt: Date) => {
+
+    // const order = new Order({ number, dataString, modifiedAt });
+
+    try {
+        const result = await Order.updateOne({ number: number }, { dataString: dataString, modifiedAt: modifiedAt });
+        return result ? result : false;
+    } catch (err) {
+        console.error('updateOrder error: ', err);
+        return false;
+    }
+};
+
 module.exports.getOrderByNumber = async (number: number) => {
     try {
         const orderObj = await Order.findOne({ number: number }).exec();

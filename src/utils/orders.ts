@@ -2,13 +2,7 @@ export {};
 
 const qs = require('qs');
 const fetch = require('node-fetch');
-
-// module.exports.getOrdersFromFtp = async (periodDays: number, st: string) => {
-//
-//   // @ts-ignore
-//   const ordersInfoArr = await this.getOrdersInfoFromFtp(periodDays, st);
-//   return ordersInfoArr.map((orderInfo: any) => parseInt(orderInfo.name));
-// };
+const orders = require('../utils/orders');
 
 module.exports.getOrdersInfoFromFtp = async (periodDays: number, st: string) => {
 
@@ -78,6 +72,84 @@ module.exports.getOrderDataStr = async(orderNumber: number, st: string) => {
 
 };
 
+module.exports.extractUpdatedInfo = (orderDataStrFromDb: string, orderDataStrFromFtp: string): {updatedPartOfInfoBefore: string, updatedPartOfInfoAfter: string} => {
+
+  const objFromDb = orders.parseOrderDataString(orderDataStrFromDb);
+
+  const objFromFtp = orders.parseOrderDataString(orderDataStrFromFtp);
+
+  const commonKeysWthDuplicates = [ ...Object.keys(objFromDb), ...Object.keys(objFromFtp) ];
+
+  const commonKeys = commonKeysWthDuplicates.reduce((acc: string[], key: string) => {
+    if(!acc.includes(key)) {
+      acc.push(key);
+    }
+    return acc;
+  }, []);
+
+  return commonKeys.reduce((acc, key: string) => {
+    if((key in objFromDb) && (key in objFromFtp) && (objFromDb[key] === objFromFtp[key])) {
+      return acc;
+    } else {
+      if((key in objFromDb) && (key in objFromFtp)) {
+        acc.updatedPartOfInfoBefore = `${acc.updatedPartOfInfoBefore}${key}: ${objFromDb[key]}\n`;
+        acc.updatedPartOfInfoAfter = `${acc.updatedPartOfInfoAfter}${key}: ${objFromFtp[key]}\n`;
+      } else {
+        if(key in objFromDb) {
+          acc.updatedPartOfInfoBefore = `${acc.updatedPartOfInfoBefore}${key}: ${objFromDb[key]}\n`;
+        } else {
+          acc.updatedPartOfInfoAfter = `${acc.updatedPartOfInfoAfter}${key}: ${objFromFtp[key]}\n`;
+        }
+      }
+      return acc;
+    }
+  }, {
+    updatedPartOfInfoBefore: '',
+    updatedPartOfInfoAfter: ''
+  });
+};
+
+module.exports.parseOrderDataString = (str: string) => {
+
+  const orderDataArray = str.split(';');
+  // console.log('orderDataArray: ', orderDataArray);
+  // let orderDataKeys = [
+  //   'order',
+  //   'createDate',
+  //   'releaseDate',
+  //   'product',
+  //   'workType',
+  //   'count',
+  //   'material',
+  //   'description',
+  //   'additionalInfo',
+  //   'manager',
+  //   'office',
+  //   'client',
+  //   'approveDate'
+  // ];
+  const orderDataKeys = [
+    'Номер заказа',
+    'Заведён',
+    'Отгрузка',
+    'Название',
+    'Вид работ',
+    'Тираж',
+    'Материал',
+    'Описание',
+    'Доп. инфо',
+    'Менеджер',
+    'Филиал',
+    'Заказчик',
+    'Дата согласования'
+  ];
+  return orderDataKeys.reduce((acc: any, key, index) => {
+    acc[key] = orderDataArray[index][0] === "\"" ? orderDataArray[index].slice(1, orderDataArray[index].length - 1) : orderDataArray[index];
+    return acc;
+  }, {});
+};
+
+
 // module.exports.getOrderFileModifiedAtStr = async(orderNumber: number, st: string): Promise<string | boolean> => {
 //   const queue = qs.stringify({
 //     "st": st,
@@ -101,12 +173,19 @@ module.exports.getOrderDataStr = async(orderNumber: number, st: string) => {
 //     return false;
 //   }
 // };
+// module.exports.getOrdersFromFtp = async (periodDays: number, st: string) => {
+//
+//   // @ts-ignore
+//   const ordersInfoArr = await this.getOrdersInfoFromFtp(periodDays, st);
+//   return ordersInfoArr.map((orderInfo: any) => parseInt(orderInfo.name));
+// };
 
 interface UnixPermissions {
   Read: number;
   Write: number;
   Execute: number;
 }
+
 enum FileType {
   Unknown = 0,
   File = 1,
@@ -164,4 +243,11 @@ export interface FileInfo {
    * Unique ID if available.
    */
   uniqueID?: string;
+}
+
+export interface UpdateOrderInfo {
+  orderNumber: number,
+  date: Date
+  updatedPartOfInfoBefore: string,
+  updatedPartOfInfoAfter: string,
 }

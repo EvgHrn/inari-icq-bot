@@ -11,12 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const qs = require('qs');
 const fetch = require('node-fetch');
-// module.exports.getOrdersFromFtp = async (periodDays: number, st: string) => {
-//
-//   // @ts-ignore
-//   const ordersInfoArr = await this.getOrdersInfoFromFtp(periodDays, st);
-//   return ordersInfoArr.map((orderInfo: any) => parseInt(orderInfo.name));
-// };
+const orders = require('../utils/orders');
 module.exports.getOrdersInfoFromFtp = (periodDays, st) => __awaiter(void 0, void 0, void 0, function* () {
     const queue = qs.stringify({
         "periodDays": periodDays,
@@ -76,6 +71,78 @@ module.exports.getOrderDataStr = (orderNumber, st) => __awaiter(void 0, void 0, 
         return {};
     }
 });
+module.exports.extractUpdatedInfo = (orderDataStrFromDb, orderDataStrFromFtp) => {
+    const objFromDb = orders.parseOrderDataString(orderDataStrFromDb);
+    const objFromFtp = orders.parseOrderDataString(orderDataStrFromFtp);
+    const commonKeysWthDuplicates = [...Object.keys(objFromDb), ...Object.keys(objFromFtp)];
+    const commonKeys = commonKeysWthDuplicates.reduce((acc, key) => {
+        if (!acc.includes(key)) {
+            acc.push(key);
+        }
+        return acc;
+    }, []);
+    return commonKeys.reduce((acc, key) => {
+        if ((key in objFromDb) && (key in objFromFtp) && (objFromDb[key] === objFromFtp[key])) {
+            return acc;
+        }
+        else {
+            if ((key in objFromDb) && (key in objFromFtp)) {
+                acc.updatedPartOfInfoBefore = `${acc.updatedPartOfInfoBefore}${key}: ${objFromDb[key]}\n`;
+                acc.updatedPartOfInfoAfter = `${acc.updatedPartOfInfoAfter}${key}: ${objFromFtp[key]}\n`;
+            }
+            else {
+                if (key in objFromDb) {
+                    acc.updatedPartOfInfoBefore = `${acc.updatedPartOfInfoBefore}${key}: ${objFromDb[key]}\n`;
+                }
+                else {
+                    acc.updatedPartOfInfoAfter = `${acc.updatedPartOfInfoAfter}${key}: ${objFromFtp[key]}\n`;
+                }
+            }
+            return acc;
+        }
+    }, {
+        updatedPartOfInfoBefore: '',
+        updatedPartOfInfoAfter: ''
+    });
+};
+module.exports.parseOrderDataString = (str) => {
+    const orderDataArray = str.split(';');
+    // console.log('orderDataArray: ', orderDataArray);
+    // let orderDataKeys = [
+    //   'order',
+    //   'createDate',
+    //   'releaseDate',
+    //   'product',
+    //   'workType',
+    //   'count',
+    //   'material',
+    //   'description',
+    //   'additionalInfo',
+    //   'manager',
+    //   'office',
+    //   'client',
+    //   'approveDate'
+    // ];
+    const orderDataKeys = [
+        'Номер заказа',
+        'Заведён',
+        'Отгрузка',
+        'Название',
+        'Вид работ',
+        'Тираж',
+        'Материал',
+        'Описание',
+        'Доп. инфо',
+        'Менеджер',
+        'Филиал',
+        'Заказчик',
+        'Дата согласования'
+    ];
+    return orderDataKeys.reduce((acc, key, index) => {
+        acc[key] = orderDataArray[index][0] === "\"" ? orderDataArray[index].slice(1, orderDataArray[index].length - 1) : orderDataArray[index];
+        return acc;
+    }, {});
+};
 var FileType;
 (function (FileType) {
     FileType[FileType["Unknown"] = 0] = "Unknown";

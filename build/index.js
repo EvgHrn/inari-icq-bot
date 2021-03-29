@@ -21,7 +21,7 @@ require('dotenv').config();
 const dbState = db.getDbState();
 console.info('Db state: ', dbState);
 // Создаём фасад пакета ICQ
-// const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
+const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
 // Создаём обработчик для новых сообщений
 const handlerNewMessage = new ICQ.Handler.Message(null, (bot, event) => __awaiter(void 0, void 0, void 0, function* () {
     // Получаем номер чата из объекта event
@@ -84,10 +84,10 @@ const handlerDeleteMessage = new ICQ.Handler.DeletedMessage(null, (bot, event) =
 //     bot.sendText(event.fromChatId, "Данные в очереди на обработку ", null,null,null,[buttonOk,buttonOpenWeb ]);
 // });
 // Получаем диспетчер бота и добавляем в него обработчики
-// bot.getDispatcher().addHandler(handlerNewMessage);
-// bot.getDispatcher().addHandler(handlerDeleteMessage);
+bot.getDispatcher().addHandler(handlerNewMessage);
+bot.getDispatcher().addHandler(handlerDeleteMessage);
 // Запускаем пулинг для получения команд обработчикам
-// bot.startPolling();
+bot.startPolling();
 const getOrderData = (orderNumber, st) => __awaiter(void 0, void 0, void 0, function* () {
     if (!orderNumber)
         return false;
@@ -96,7 +96,7 @@ const getOrderData = (orderNumber, st) => __awaiter(void 0, void 0, void 0, func
     let orderObj = {};
     if ("data" in result) {
         try {
-            orderObj = parseOrderDataString(result.data);
+            orderObj = orders.parseOrderDataString(result.data);
         }
         catch (e) {
             return false;
@@ -129,44 +129,6 @@ const getRawOrderData = (orderNumber, st) => __awaiter(void 0, void 0, void 0, f
         return {};
     }
 });
-const parseOrderDataString = (str) => {
-    const orderDataArray = str.split(';');
-    // console.log('orderDataArray: ', orderDataArray);
-    // let orderDataKeys = [
-    //   'order',
-    //   'createDate',
-    //   'releaseDate',
-    //   'product',
-    //   'workType',
-    //   'count',
-    //   'material',
-    //   'description',
-    //   'additionalInfo',
-    //   'manager',
-    //   'office',
-    //   'client',
-    //   'approveDate'
-    // ];
-    const orderDataKeys = [
-        'Номер заказа',
-        'Заведён',
-        'Отгрузка',
-        'Название',
-        'Вид работ',
-        'Тираж',
-        'Материал',
-        'Описание',
-        'Доп. инфо',
-        'Менеджер',
-        'Филиал',
-        'Заказчик',
-        'Дата согласования'
-    ];
-    return orderDataKeys.reduce((acc, key, index) => {
-        acc[key] = orderDataArray[index][0] === "\"" ? orderDataArray[index].slice(1, orderDataArray[index].length - 1) : orderDataArray[index];
-        return acc;
-    }, {});
-};
 const strToOrderNumber = (str) => {
     try {
         const orderNumber = parseInt(str.replace(/ /g, ''));
@@ -213,6 +175,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
             console.log('Created order in db: ', newOrder);
         }
         else {
+            // Existing order
             console.log('Existing order: ', ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb = yield db.getOrderByNumber(ordersNumbersArr[i]);
@@ -229,6 +192,11 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
             console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
             if (!date_fns_1.isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
                 console.log('Dates NOT equal, so update');
+                // @ts-ignore
+                const orderDataStrFromFtp = yield getRawOrderData(ordersNumbersArr[i], process.env.ST);
+                const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
+                console.log('Difference: ', diff);
+                bot.sendText(process.env.ADM_USER, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
             }
             else {
                 console.log('Dates equal, so do nothing');
@@ -238,7 +206,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
     // fill db with data string if no that order
     // if there is order data in db, compare data string and if there are difference, notice subscribed users
 });
-setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
+setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     if (onPriorOrdersFilesScanning)
         return;
     onPriorOrdersFilesScanning = true;
@@ -262,7 +230,7 @@ setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
     console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
     yield updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
-}), 5000);
+}), 1800000);
 // setTimeout(async() => {
 //     if(onOtherOrdersFilesScanning) return;
 //     onOtherOrdersFilesScanning = true;

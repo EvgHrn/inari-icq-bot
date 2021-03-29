@@ -18,7 +18,7 @@ const dbState = db.getDbState();
 console.info('Db state: ', dbState);
 
 // Создаём фасад пакета ICQ
-// const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
+const bot = new ICQ.Bot(process.env.ICQ_BOT_TOKEN);
 
 // Создаём обработчик для новых сообщений
 const handlerNewMessage = new ICQ.Handler.Message(null, async(bot: any, event: any) => {
@@ -87,11 +87,11 @@ const handlerDeleteMessage = new ICQ.Handler.DeletedMessage(null, (bot: any, eve
 // });
 
 // Получаем диспетчер бота и добавляем в него обработчики
-// bot.getDispatcher().addHandler(handlerNewMessage);
-// bot.getDispatcher().addHandler(handlerDeleteMessage);
+bot.getDispatcher().addHandler(handlerNewMessage);
+bot.getDispatcher().addHandler(handlerDeleteMessage);
 
 // Запускаем пулинг для получения команд обработчикам
-// bot.startPolling();
+bot.startPolling();
 
 const getOrderData = async (orderNumber: number, st: string) => {
     if(!orderNumber) return false;
@@ -100,7 +100,7 @@ const getOrderData = async (orderNumber: number, st: string) => {
     let orderObj = {};
     if("data" in result) {
         try {
-            orderObj = parseOrderDataString(result.data);
+            orderObj = orders.parseOrderDataString(result.data);
         } catch (e) {
             return false;
         }
@@ -134,45 +134,6 @@ const getRawOrderData = async(orderNumber: number, st: string) => {
         return {};
     }
 
-};
-
-const parseOrderDataString = (str: string) => {
-    const orderDataArray = str.split(';');
-    // console.log('orderDataArray: ', orderDataArray);
-    // let orderDataKeys = [
-    //   'order',
-    //   'createDate',
-    //   'releaseDate',
-    //   'product',
-    //   'workType',
-    //   'count',
-    //   'material',
-    //   'description',
-    //   'additionalInfo',
-    //   'manager',
-    //   'office',
-    //   'client',
-    //   'approveDate'
-    // ];
-    const orderDataKeys = [
-        'Номер заказа',
-        'Заведён',
-        'Отгрузка',
-        'Название',
-        'Вид работ',
-        'Тираж',
-        'Материал',
-        'Описание',
-        'Доп. инфо',
-        'Менеджер',
-        'Филиал',
-        'Заказчик',
-        'Дата согласования'
-    ];
-    return orderDataKeys.reduce((acc: any, key, index) => {
-        acc[key] = orderDataArray[index][0] === "\"" ? orderDataArray[index].slice(1, orderDataArray[index].length - 1) : orderDataArray[index];
-        return acc;
-    }, {});
 };
 
 const strToOrderNumber = (str: string) => {
@@ -227,6 +188,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             const newOrder = await db.createOrder(ordersNumbersArr[i], obj.data, date);
             console.log('Created order in db: ', newOrder);
         } else {
+            // Existing order
             console.log('Existing order: ', ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb: OrderType = await db.getOrderByNumber(ordersNumbersArr[i]);
@@ -235,7 +197,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             }
             const orderModifiedAtFromDbDate = orderFromDb.modifiedAt;
             const dateStr = orderObjFromFtp.rawModifiedAt;
-            const orderModifiedAtStrOnFtpDate = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            const orderModifiedAtStrOnFtpDate: Date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
             if(!orderModifiedAtStrOnFtpDate) {
                 console.error('Date parsing error for: ', dateStr);
                 continue;
@@ -243,7 +205,14 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
             if(!isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
                 console.log('Dates NOT equal, so update');
-
+                // @ts-ignore
+                const orderDataStrFromFtp = await getRawOrderData(ordersNumbersArr[i], process.env.ST);
+                const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
+                console.log('Difference: ', diff);
+                bot.sendText(process.env.ADM_USER, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                console.log('Gonna update order on db: ', ordersNumbersArr[i]);
+                const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp, orderModifiedAtStrOnFtpDate);
+                console.log('Updated order: ', updatedOrder);
             } else {
                 console.log('Dates equal, so do nothing');
             }
@@ -254,7 +223,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
 
 };
 
-setTimeout(async() => {
+setInterval(async() => {
     if(onPriorOrdersFilesScanning) return;
     onPriorOrdersFilesScanning = true;
     // get files list
@@ -277,7 +246,7 @@ setTimeout(async() => {
     console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
     await updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
-}, 5000);
+}, 1800000);
 
 // setTimeout(async() => {
 //     if(onOtherOrdersFilesScanning) return;
