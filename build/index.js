@@ -196,7 +196,13 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                 const orderDataStrFromFtp = yield getRawOrderData(ordersNumbersArr[i], process.env.ST);
                 const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
                 console.log('Difference: ', diff);
-                bot.sendText(process.env.ADM_USER, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                const usersArr = yield db.getUsers();
+                if (!usersArr)
+                    continue;
+                const usersWithOrdersUpdatesSubscription = usersArr.filter((user) => user.subscriptions && (user.subscriptions.includes('ordersUpdates')));
+                usersWithOrdersUpdatesSubscription.forEach((user) => {
+                    bot.sendText(user.icqId, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                });
                 console.log('Gonna update order on db: ', ordersNumbersArr[i]);
                 const updatedOrder = yield db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
                 console.log('Updated order: ', updatedOrder);
@@ -209,7 +215,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
     // fill db with data string if no that order
     // if there is order data in db, compare data string and if there are difference, notice subscribed users
 });
-setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
+setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
     if (onPriorOrdersFilesScanning)
         return;
     onPriorOrdersFilesScanning = true;
@@ -218,7 +224,6 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     if (!ordersInfoArr) {
         return;
     }
-    // const ordersList = ordersInfoArr.map((orderInfo: FileInfo) => parseInt(orderInfo.name));
     ordersInfoArr.sort((a, b) => {
         if (a.name < b.name) {
             return -1;
@@ -233,7 +238,7 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
     yield updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
-}), 1800000);
+}), 5000);
 // setTimeout(async() => {
 //     if(onOtherOrdersFilesScanning) return;
 //     onOtherOrdersFilesScanning = true;

@@ -71,6 +71,16 @@ module.exports.getUserByIcqId = (icqId) => __awaiter(void 0, void 0, void 0, fun
         return false;
     }
 });
+module.exports.getUsers = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const users = yield User.find({}).exec();
+        return users ? users : false;
+    }
+    catch (e) {
+        console.error("Getting users error: ", e);
+        return false;
+    }
+});
 module.exports.getDbState = () => {
     return db_connection.readyState;
 };

@@ -1,6 +1,7 @@
 import { isEqual } from "date-fns";
-import {OrderType} from "./utils/db";
+import {OrderType, UserType} from "./utils/db";
 import {FileInfo} from "./utils/orders";
+import {User} from "icq-bot/dist/interfaces/Entities/User";
 
 export {};
 // Импортируем бота
@@ -209,7 +210,12 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                 const orderDataStrFromFtp = await getRawOrderData(ordersNumbersArr[i], process.env.ST);
                 const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
                 console.log('Difference: ', diff);
-                bot.sendText(process.env.ADM_USER, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                const usersArr: UserType[] = await db.getUsers();
+                if(!usersArr) continue;
+                const usersWithOrdersUpdatesSubscription = usersArr.filter((user: UserType) => user.subscriptions && (user.subscriptions.includes('ordersUpdates')));
+                usersWithOrdersUpdatesSubscription.forEach((user: UserType) => {
+                    bot.sendText(user.icqId, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                });
                 console.log('Gonna update order on db: ', ordersNumbersArr[i]);
                 const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
                 console.log('Updated order: ', updatedOrder);
@@ -223,7 +229,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
 
 };
 
-setInterval(async() => {
+setTimeout(async() => {
     if(onPriorOrdersFilesScanning) return;
     onPriorOrdersFilesScanning = true;
     // get files list
@@ -231,7 +237,6 @@ setInterval(async() => {
     if(!ordersInfoArr) {
         return;
     }
-    // const ordersList = ordersInfoArr.map((orderInfo: FileInfo) => parseInt(orderInfo.name));
     ordersInfoArr.sort((a: FileInfo, b: FileInfo) => {
         if(a.name < b.name) {
             return -1;
@@ -246,7 +251,7 @@ setInterval(async() => {
     console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
     await updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
-}, 1800000);
+}, 5000);
 
 // setTimeout(async() => {
 //     if(onOtherOrdersFilesScanning) return;

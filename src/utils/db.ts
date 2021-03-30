@@ -70,6 +70,16 @@ module.exports.getUserByIcqId = async (icqId: string): Promise<boolean | UserTyp
     }
 };
 
+module.exports.getUsers = async (): Promise<boolean | UserType[]> => {
+    try {
+        const users = await User.find({}).exec();
+        return users ? users : false;
+    } catch (e) {
+        console.error("Getting users error: ", e);
+        return false;
+    }
+};
+
 module.exports.getDbState = () => {
     return db_connection.readyState;
 };
@@ -125,7 +135,7 @@ module.exports.getOrdersListFromDb = async(): Promise<number[] | boolean> => {
 export interface UserType {
     name: string,
     icqId: string,
-    subscriptions?: string[]
+    subscriptions?: Subscription[]
 }
 
 export interface OrderType {
@@ -133,3 +143,5 @@ export interface OrderType {
     dataString: string,
     modifiedAt: Date
 }
+
+export type Subscription = 'ordersUpdates';
