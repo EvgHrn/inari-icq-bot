@@ -211,7 +211,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                 console.log('Difference: ', diff);
                 bot.sendText(process.env.ADM_USER, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
                 console.log('Gonna update order on db: ', ordersNumbersArr[i]);
-                const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp, orderModifiedAtStrOnFtpDate);
+                const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
                 console.log('Updated order: ', updatedOrder);
             } else {
                 console.log('Dates equal, so do nothing');

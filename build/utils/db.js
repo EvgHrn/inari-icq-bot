@@ -85,6 +85,17 @@ module.exports.createOrder = (number, dataString, modifiedAt) => __awaiter(void 
         return false;
     }
 });
+module.exports.updateOrder = (number, dataString, modifiedAt) => __awaiter(void 0, void 0, void 0, function* () {
+    // const order = new Order({ number, dataString, modifiedAt });
+    try {
+        const result = yield Order.updateOne({ number: number }, { dataString: dataString, modifiedAt: modifiedAt });
+        return result ? result : false;
+    }
+    catch (err) {
+        console.error('updateOrder error: ', err);
+        return false;
+    }
+});
 module.exports.getOrderByNumber = (number) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const orderObj = yield Order.findOne({ number: number }).exec();

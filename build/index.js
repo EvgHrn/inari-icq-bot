@@ -197,6 +197,9 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                 const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
                 console.log('Difference: ', diff);
                 bot.sendText(process.env.ADM_USER, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                console.log('Gonna update order on db: ', ordersNumbersArr[i]);
+                const updatedOrder = yield db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
+                console.log('Updated order: ', updatedOrder);
             }
             else {
                 console.log('Dates equal, so do nothing');
