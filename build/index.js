@@ -215,7 +215,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
     // fill db with data string if no that order
     // if there is order data in db, compare data string and if there are difference, notice subscribed users
 });
-setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
+setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     if (onPriorOrdersFilesScanning)
         return;
     onPriorOrdersFilesScanning = true;
@@ -238,7 +238,7 @@ setTimeout(() => __awaiter(void 0, void 0, void 0, function* () {
     console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
     yield updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
-}), 5000);
+}), 1800000);
 // setTimeout(async() => {
 //     if(onOtherOrdersFilesScanning) return;
 //     onOtherOrdersFilesScanning = true;

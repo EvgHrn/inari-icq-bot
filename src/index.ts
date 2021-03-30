@@ -229,7 +229,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
 
 };
 
-setTimeout(async() => {
+setInterval(async() => {
     if(onPriorOrdersFilesScanning) return;
     onPriorOrdersFilesScanning = true;
     // get files list
@@ -251,7 +251,7 @@ setTimeout(async() => {
     console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
     await updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
-}, 5000);
+}, 1800000);
 
 // setTimeout(async() => {
 //     if(onOtherOrdersFilesScanning) return;
