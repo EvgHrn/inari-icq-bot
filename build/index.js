@@ -201,7 +201,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                     continue;
                 const usersWithOrdersUpdatesSubscription = usersArr.filter((user) => user.subscriptions && (user.subscriptions.includes('ordersUpdates')));
                 usersWithOrdersUpdatesSubscription.forEach((user) => {
-                    bot.sendText(user.icqId, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                    bot.sendText(user.icqId, `Изменение в заказе ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
                 });
                 console.log('Gonna update order on db: ', ordersNumbersArr[i]);
                 const updatedOrder = yield db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
@@ -216,8 +216,10 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
     // if there is order data in db, compare data string and if there are difference, notice subscribed users
 });
 setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
-    if (onPriorOrdersFilesScanning)
+    if (onPriorOrdersFilesScanning) {
+        console.log('onPriorOrdersFilesScanning is true, so omit interval');
         return;
+    }
     onPriorOrdersFilesScanning = true;
     // get files list
     const ordersInfoArr = yield orders.getOrdersInfoFromFtp(60, process.env.ST);
@@ -239,14 +241,31 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     yield updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
 }), 1800000);
-// setTimeout(async() => {
-//     if(onOtherOrdersFilesScanning) return;
-//     onOtherOrdersFilesScanning = true;
-//     // get files list
-//     const ordersList = await orders.getOrdersFromFtp(60, process.env.ST);
+setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
+    if (onOtherOrdersFilesScanning) {
+        console.log('onOtherOrdersFilesScanning is true, so omit interval');
+        return;
+    }
+    onOtherOrdersFilesScanning = true;
+    // get files list
+    const ordersInfoArr = yield orders.getOrdersInfoFromFtp(60, process.env.ST);
+    if (!ordersInfoArr) {
+        return;
+    }
+    ordersInfoArr.sort((a, b) => {
+        if (a.name < b.name) {
+            return -1;
+        }
+        if (a.name > b.name) {
+            return 1;
+        }
+        console.error('Duplicate file name: ', a.name);
+        return 0;
+    });
+    const ordersArrToUpdate = ordersInfoArr.slice(0, ordersInfoArr.length - 999);
+    console.log("Other orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
+    yield updateOrders(ordersArrToUpdate);
+    onOtherOrdersFilesScanning = false;
+}), 3600000);
 //     const ordersListToUpdate = ordersList.slice(0, ordersList.length - 999);
-//     console.log("Other orders: ", ordersListToUpdate);
-//     await updateOrders(ordersListToUpdate);
-//     onOtherOrdersFilesScanning = false;
-// }, 5000);
 //# sourceMappingURL=index.js.map

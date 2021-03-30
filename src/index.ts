@@ -214,7 +214,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                 if(!usersArr) continue;
                 const usersWithOrdersUpdatesSubscription = usersArr.filter((user: UserType) => user.subscriptions && (user.subscriptions.includes('ordersUpdates')));
                 usersWithOrdersUpdatesSubscription.forEach((user: UserType) => {
-                    bot.sendText(user.icqId, `Изменение в заказа ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                    bot.sendText(user.icqId, `Изменение в заказе ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
                 });
                 console.log('Gonna update order on db: ', ordersNumbersArr[i]);
                 const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
@@ -230,7 +230,10 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
 };
 
 setInterval(async() => {
-    if(onPriorOrdersFilesScanning) return;
+    if(onPriorOrdersFilesScanning) {
+        console.log('onPriorOrdersFilesScanning is true, so omit interval');
+        return;
+    }
     onPriorOrdersFilesScanning = true;
     // get files list
     const ordersInfoArr = await orders.getOrdersInfoFromFtp(60, process.env.ST);
@@ -253,13 +256,31 @@ setInterval(async() => {
     onPriorOrdersFilesScanning = false;
 }, 1800000);
 
-// setTimeout(async() => {
-//     if(onOtherOrdersFilesScanning) return;
-//     onOtherOrdersFilesScanning = true;
-//     // get files list
-//     const ordersList = await orders.getOrdersFromFtp(60, process.env.ST);
+setInterval(async() => {
+    if(onOtherOrdersFilesScanning) {
+        console.log('onOtherOrdersFilesScanning is true, so omit interval');
+        return;
+    }
+    onOtherOrdersFilesScanning = true;
+    // get files list
+    const ordersInfoArr = await orders.getOrdersInfoFromFtp(60, process.env.ST);
+    if(!ordersInfoArr) {
+        return;
+    }
+    ordersInfoArr.sort((a: FileInfo, b: FileInfo) => {
+        if(a.name < b.name) {
+            return -1;
+        }
+        if(a.name > b.name) {
+            return 1
+        }
+        console.error('Duplicate file name: ', a.name);
+        return 0;
+    });
+    const ordersArrToUpdate: FileInfo[] = ordersInfoArr.slice(0, ordersInfoArr.length - 999);
+    console.log("Other orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
+    await updateOrders(ordersArrToUpdate);
+    onOtherOrdersFilesScanning = false;
+}, 3600000);
+
 //     const ordersListToUpdate = ordersList.slice(0, ordersList.length - 999);
-//     console.log("Other orders: ", ordersListToUpdate);
-//     await updateOrders(ordersListToUpdate);
-//     onOtherOrdersFilesScanning = false;
-// }, 5000);
