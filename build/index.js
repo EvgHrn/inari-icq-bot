@@ -196,6 +196,10 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                 const orderDataStrFromFtp = yield getRawOrderData(ordersNumbersArr[i], process.env.ST);
                 const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
                 console.log('Difference: ', diff);
+                if (diff.updatedPartOfInfoAfter.trim() === diff.updatedPartOfInfoBefore.trim()) {
+                    console.log('No difference actually, so do nothing');
+                    continue;
+                }
                 const usersArr = yield db.getUsers();
                 if (!usersArr)
                     continue;

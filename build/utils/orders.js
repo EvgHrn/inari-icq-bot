@@ -82,7 +82,7 @@ module.exports.extractUpdatedInfo = (orderDataStrFromDb, orderDataStrFromFtp) =>
         return acc;
     }, []);
     return commonKeys.reduce((acc, key) => {
-        if ((key in objFromDb) && (key in objFromFtp) && (objFromDb[key] === objFromFtp[key])) {
+        if ((key in objFromDb) && (key in objFromFtp) && (objFromDb[key].trim() === objFromFtp[key].trim())) {
             return acc;
         }
         else {

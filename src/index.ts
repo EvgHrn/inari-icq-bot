@@ -210,6 +210,10 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                 const orderDataStrFromFtp = await getRawOrderData(ordersNumbersArr[i], process.env.ST);
                 const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
                 console.log('Difference: ', diff);
+                if(diff.updatedPartOfInfoAfter.trim() === diff.updatedPartOfInfoBefore.trim()) {
+                    console.log('No difference actually, so do nothing');
+                    continue;
+                }
                 const usersArr: UserType[] = await db.getUsers();
                 if(!usersArr) continue;
                 const usersWithOrdersUpdatesSubscription = usersArr.filter((user: UserType) => user.subscriptions && (user.subscriptions.includes('ordersUpdates')));
