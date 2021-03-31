@@ -190,7 +190,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             console.log('Created order in db: ', newOrder);
         } else {
             // Existing order
-            console.log('Existing order: ', ordersNumbersArr[i]);
+            // console.log('Existing order: ', ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb: OrderType = await db.getOrderByNumber(ordersNumbersArr[i]);
             if(!orderFromDb) {
@@ -203,7 +203,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                 console.error('Date parsing error for: ', dateStr);
                 continue;
             }
-            console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
+            // console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
             if(!isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
                 console.log('Dates NOT equal, so update');
                 // @ts-ignore
@@ -220,7 +220,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                 const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
                 console.log('Updated order: ', updatedOrder);
             } else {
-                console.log('Dates equal, so do nothing');
+                // console.log('Dates equal, so do nothing');
             }
         }
     }

@@ -176,7 +176,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
         }
         else {
             // Existing order
-            console.log('Existing order: ', ordersNumbersArr[i]);
+            // console.log('Existing order: ', ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb = yield db.getOrderByNumber(ordersNumbersArr[i]);
             if (!orderFromDb) {
@@ -189,7 +189,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                 console.error('Date parsing error for: ', dateStr);
                 continue;
             }
-            console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
+            // console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
             if (!date_fns_1.isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
                 console.log('Dates NOT equal, so update');
                 // @ts-ignore
@@ -208,7 +208,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                 console.log('Updated order: ', updatedOrder);
             }
             else {
-                console.log('Dates equal, so do nothing');
+                // console.log('Dates equal, so do nothing');
             }
         }
     }
