@@ -75,14 +75,6 @@ const handlerDeleteMessage = new ICQ.Handler.DeletedMessage(null, (bot, event) =
     // Отправляем сообщение в чат отправителя
     bot.sendText(chatId, "Зачем!");
 });
-// Создаём обработчик для добавления пользователя
-// const handlerCommand = new ICQ.Handler.Command("update",null, (bot, event) => {
-//     let buttonOpenWeb = new ICQ.Button("Читать статьи", null, "https://fake-mm.ru")
-//     // Вызов метода сервиса обработки данных и получение ID задачи
-//     const id = service.addTask();
-//     let buttonOk = new ICQ.Button("Отменить обработку", `{"name": "removeTask","id": ${id}}`)
-//     bot.sendText(event.fromChatId, "Данные в очереди на обработку ", null,null,null,[buttonOk,buttonOpenWeb ]);
-// });
 // Получаем диспетчер бота и добавляем в него обработчики
 bot.getDispatcher().addHandler(handlerNewMessage);
 bot.getDispatcher().addHandler(handlerDeleteMessage);
@@ -200,12 +192,17 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                     console.log('No difference actually, so do nothing');
                     continue;
                 }
+                const orderDataObj = orders.parseOrderDataString(orderDataStrFromFtp.data);
+                let productStr = '';
+                if (orderDataObj && ('Название' in orderDataObj)) {
+                    productStr = orderDataObj['Название'];
+                }
                 const usersArr = yield db.getUsers();
                 if (!usersArr)
                     continue;
                 const usersWithOrdersUpdatesSubscription = usersArr.filter((user) => user.subscriptions && (user.subscriptions.includes('ordersUpdates')));
                 usersWithOrdersUpdatesSubscription.forEach((user) => {
-                    bot.sendText(user.icqId, `Изменение в заказе ${ordersNumbersArr[i]}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                    bot.sendText(user.icqId, `Изменение в заказе ${ordersNumbersArr[i]} ${productStr}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
                 });
                 console.log('Gonna update order on db: ', ordersNumbersArr[i]);
                 const updatedOrder = yield db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
