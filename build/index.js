@@ -183,7 +183,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
             }
             // console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
             if (!date_fns_1.isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
-                console.log('Dates NOT equal, so update');
+                console.log(`Dates NOT equal for ${ordersNumbersArr[i]}`);
                 // @ts-ignore
                 const orderDataStrFromFtp = yield getRawOrderData(ordersNumbersArr[i], process.env.ST);
                 const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
@@ -204,7 +204,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                 usersWithOrdersUpdatesSubscription.forEach((user) => {
                     bot.sendText(user.icqId, `Изменение в заказе ${ordersNumbersArr[i]} ${productStr}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
                 });
-                console.log('Gonna update order on db: ', ordersNumbersArr[i]);
+                console.log('Gonna update order on db');
                 const updatedOrder = yield db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
                 console.log('Updated order: ', updatedOrder);
             }
