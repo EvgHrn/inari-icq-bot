@@ -141,34 +141,35 @@ const strToOrderNumber = (str) => {
 let onPriorOrdersFilesScanning = false;
 let onOtherOrdersFilesScanning = false;
 const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("orders count: ", ordersArr.length);
+    const nowDateStr = new Date().toISOString();
+    console.log(`${nowDateStr} orders count: `, ordersArr.length);
     const ordersNumbersArr = ordersArr.map((order) => parseInt(order.name));
     const ordersListFromDb = yield db.getOrdersListFromDb();
-    console.log('Orders from db: ', ordersListFromDb);
+    console.log(`${nowDateStr} Orders from db: `, ordersListFromDb);
     if (!Array.isArray(ordersListFromDb)) {
         return false;
     }
     for (let i = 0; i < ordersNumbersArr.length; i++) {
         const orderObjFromFtp = ordersArr.find((order) => order.name === (ordersNumbersArr[i].toString()));
         if (!orderObjFromFtp) {
-            console.error("No order info for: ", ordersNumbersArr[i]);
+            console.error(`${nowDateStr} No order info for: `, ordersNumbersArr[i]);
             continue;
         }
         // new order
         if (!ordersListFromDb.includes(ordersNumbersArr[i])) {
-            console.log('We have new order: ', ordersNumbersArr[i]);
+            console.log(`${nowDateStr} We have new order: `, ordersNumbersArr[i]);
             const obj = yield orders.getOrderDataStr(ordersNumbersArr[i], process.env.ST);
-            console.log("Order data string: ", obj.data);
+            console.log(`${nowDateStr} Order data string: `, obj.data);
             const dateStr = orderObjFromFtp.rawModifiedAt;
             const date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
-            console.log(`ModifiedAt for ${ordersNumbersArr[i]}: `, date.toLocaleString());
-            console.log('Gonna create order on db');
+            console.log(`${nowDateStr} ModifiedAt for ${ordersNumbersArr[i]}: `, date.toLocaleString());
+            console.log(`${nowDateStr} Gonna create order on db`);
             const newOrder = yield db.createOrder(ordersNumbersArr[i], obj.data, date);
-            console.log('Created order in db: ', newOrder);
+            console.log(`${nowDateStr} Created order in db: `, newOrder);
         }
         else {
             // Existing order
-            console.log('Existing order: ', ordersNumbersArr[i]);
+            console.log(`${nowDateStr} Existing order: `, ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb = yield db.getOrderByNumber(ordersNumbersArr[i]);
             if (!orderFromDb) {
@@ -178,18 +179,18 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
             const dateStr = orderObjFromFtp.rawModifiedAt;
             const orderModifiedAtStrOnFtpDate = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
             if (!orderModifiedAtStrOnFtpDate) {
-                console.error('Date parsing error for: ', dateStr);
+                console.error(`${nowDateStr} Date parsing error for: `, dateStr);
                 continue;
             }
             // console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
             if (!date_fns_1.isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
-                console.log(`Dates NOT equal for ${ordersNumbersArr[i]}`);
+                console.log(`${nowDateStr} Dates NOT equal for ${ordersNumbersArr[i]}`);
                 // @ts-ignore
                 const orderDataStrFromFtp = yield getRawOrderData(ordersNumbersArr[i], process.env.ST);
                 const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
-                console.log('Difference: ', diff);
+                console.log(`${nowDateStr} Difference: `, diff);
                 if (diff.updatedPartOfInfoAfter.trim() === diff.updatedPartOfInfoBefore.trim()) {
-                    console.log('No difference actually, so do nothing');
+                    console.log(`${nowDateStr} No difference actually, so do nothing`);
                     continue;
                 }
                 const orderDataObj = orders.parseOrderDataString(orderDataStrFromFtp.data);
@@ -204,12 +205,12 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                 usersWithOrdersUpdatesSubscription.forEach((user) => {
                     bot.sendText(user.icqId, `Изменение в заказе ${ordersNumbersArr[i]} ${productStr}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
                 });
-                console.log('Gonna update order on db');
+                console.log(`${nowDateStr} Gonna update order on db`);
                 const updatedOrder = yield db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
-                console.log('Updated order: ', updatedOrder);
+                console.log(`${nowDateStr} Updated order: `, updatedOrder);
             }
             else {
-                console.log('Dates equal, so do nothing');
+                console.log(`${nowDateStr} Dates equal, so do nothing`);
             }
         }
     }
@@ -218,7 +219,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
 });
 setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     if (onPriorOrdersFilesScanning) {
-        console.log('onPriorOrdersFilesScanning is true, so omit interval');
+        console.log(`[${new Date().toISOString()}] onPriorOrdersFilesScanning is true, so omit interval`);
         return;
     }
     onPriorOrdersFilesScanning = true;
@@ -234,17 +235,17 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
         if (a.name > b.name) {
             return 1;
         }
-        console.error('Duplicate file name: ', a.name);
+        console.error(`[${new Date().toISOString()}] Duplicate file name: `, a.name);
         return 0;
     });
     const ordersArrToUpdate = ordersInfoArr.slice(ordersInfoArr.length - 1000);
-    console.log("On top of priority orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
+    console.log(`[${new Date().toISOString()}] On top of priority orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
     yield updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
 }), 1800000);
 setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     if (onOtherOrdersFilesScanning) {
-        console.log('onOtherOrdersFilesScanning is true, so omit interval');
+        console.log(`[${new Date().toISOString()}] onOtherOrdersFilesScanning is true, so omit interval`);
         return;
     }
     onOtherOrdersFilesScanning = true;
@@ -260,11 +261,11 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
         if (a.name > b.name) {
             return 1;
         }
-        console.error('Duplicate file name: ', a.name);
+        console.error(`[${new Date().toISOString()}] Duplicate file name: `, a.name);
         return 0;
     });
     const ordersArrToUpdate = ordersInfoArr.slice(0, ordersInfoArr.length - 999);
-    console.log("Other orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
+    console.log(`[${new Date().toISOString()}] Other orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
     yield updateOrders(ordersArrToUpdate);
     onOtherOrdersFilesScanning = false;
 }), 4500000);
