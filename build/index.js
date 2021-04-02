@@ -141,7 +141,7 @@ const strToOrderNumber = (str) => {
 let onPriorOrdersFilesScanning = false;
 let onOtherOrdersFilesScanning = false;
 const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* () {
-    const nowDateStr = new Date().toISOString();
+    const nowDateStr = new Date().toLocaleString();
     console.log(`${nowDateStr} orders count: `, ordersArr.length);
     const ordersNumbersArr = ordersArr.map((order) => parseInt(order.name));
     const ordersListFromDb = yield db.getOrdersListFromDb();
@@ -219,7 +219,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
 });
 setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     if (onPriorOrdersFilesScanning) {
-        console.log(`[${new Date().toISOString()}] onPriorOrdersFilesScanning is true, so omit interval`);
+        console.log(`[${new Date().toLocaleString()}] onPriorOrdersFilesScanning is true, so omit interval`);
         return;
     }
     onPriorOrdersFilesScanning = true;
@@ -235,17 +235,17 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
         if (a.name > b.name) {
             return 1;
         }
-        console.error(`[${new Date().toISOString()}] Duplicate file name: `, a.name);
+        console.error(`[${new Date().toLocaleString()}] Duplicate file name: `, a.name);
         return 0;
     });
     const ordersArrToUpdate = ordersInfoArr.slice(ordersInfoArr.length - 1000);
-    console.log(`[${new Date().toISOString()}] On top of priority orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
+    console.log(`[${new Date().toLocaleString()}] On top of priority orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
     yield updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
 }), 1800000);
 setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     if (onOtherOrdersFilesScanning) {
-        console.log(`[${new Date().toISOString()}] onOtherOrdersFilesScanning is true, so omit interval`);
+        console.log(`[${new Date().toLocaleString()}] onOtherOrdersFilesScanning is true, so omit interval`);
         return;
     }
     onOtherOrdersFilesScanning = true;
@@ -261,11 +261,11 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
         if (a.name > b.name) {
             return 1;
         }
-        console.error(`[${new Date().toISOString()}] Duplicate file name: `, a.name);
+        console.error(`[${new Date().toLocaleString()}] Duplicate file name: `, a.name);
         return 0;
     });
     const ordersArrToUpdate = ordersInfoArr.slice(0, ordersInfoArr.length - 999);
-    console.log(`[${new Date().toISOString()}] Other orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
+    console.log(`[${new Date().toLocaleString()}] Other orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
     yield updateOrders(ordersArrToUpdate);
     onOtherOrdersFilesScanning = false;
 }), 4500000);

@@ -149,7 +149,7 @@ let onOtherOrdersFilesScanning = false;
 
 const updateOrders = async(ordersArr: FileInfo[]) => {
 
-    const nowDateStr = new Date().toISOString();
+    const nowDateStr = new Date().toLocaleString();
 
     console.log(`${nowDateStr} orders count: `, ordersArr.length);
 
@@ -233,7 +233,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
 
 setInterval(async() => {
     if(onPriorOrdersFilesScanning) {
-        console.log(`[${new Date().toISOString()}] onPriorOrdersFilesScanning is true, so omit interval`);
+        console.log(`[${new Date().toLocaleString()}] onPriorOrdersFilesScanning is true, so omit interval`);
         return;
     }
     onPriorOrdersFilesScanning = true;
@@ -249,18 +249,18 @@ setInterval(async() => {
         if(a.name > b.name) {
             return 1
         }
-        console.error(`[${new Date().toISOString()}] Duplicate file name: `, a.name);
+        console.error(`[${new Date().toLocaleString()}] Duplicate file name: `, a.name);
         return 0;
     });
     const ordersArrToUpdate: FileInfo[] = ordersInfoArr.slice(ordersInfoArr.length - 1000);
-    console.log(`[${new Date().toISOString()}] On top of priority orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
+    console.log(`[${new Date().toLocaleString()}] On top of priority orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
     await updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
 }, 1800000);
 
 setInterval(async() => {
     if(onOtherOrdersFilesScanning) {
-        console.log(`[${new Date().toISOString()}] onOtherOrdersFilesScanning is true, so omit interval`);
+        console.log(`[${new Date().toLocaleString()}] onOtherOrdersFilesScanning is true, so omit interval`);
         return;
     }
     onOtherOrdersFilesScanning = true;
@@ -276,11 +276,11 @@ setInterval(async() => {
         if(a.name > b.name) {
             return 1
         }
-        console.error(`[${new Date().toISOString()}] Duplicate file name: `, a.name);
+        console.error(`[${new Date().toLocaleString()}] Duplicate file name: `, a.name);
         return 0;
     });
     const ordersArrToUpdate: FileInfo[] = ordersInfoArr.slice(0, ordersInfoArr.length - 999);
-    console.log(`[${new Date().toISOString()}] Other orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
+    console.log(`[${new Date().toLocaleString()}] Other orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
     await updateOrders(ordersArrToUpdate);
     onOtherOrdersFilesScanning = false;
 }, 4500000);
