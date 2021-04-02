@@ -176,12 +176,12 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             const dateStr = orderObjFromFtp.rawModifiedAt;
             const date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
             console.log(`ModifiedAt for ${ordersNumbersArr[i]}: `, date.toLocaleString());
-            console.log('Gonna create order on db: ', ordersNumbersArr[i], obj.data, date);
+            console.log('Gonna create order on db');
             const newOrder = await db.createOrder(ordersNumbersArr[i], obj.data, date);
             console.log('Created order in db: ', newOrder);
         } else {
             // Existing order
-            // console.log('Existing order: ', ordersNumbersArr[i]);
+            console.log('Existing order: ', ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb: OrderType = await db.getOrderByNumber(ordersNumbersArr[i]);
             if(!orderFromDb) {
@@ -220,7 +220,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                 const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
                 console.log('Updated order: ', updatedOrder);
             } else {
-                // console.log('Dates equal, so do nothing');
+                console.log('Dates equal, so do nothing');
             }
         }
     }
@@ -281,6 +281,6 @@ setInterval(async() => {
     console.log("Other orders: ", ordersArrToUpdate.map((order) => parseInt(order.name)));
     await updateOrders(ordersArrToUpdate);
     onOtherOrdersFilesScanning = false;
-}, 3600000);
+}, 4500000);
 
 //     const ordersListToUpdate = ordersList.slice(0, ordersList.length - 999);
