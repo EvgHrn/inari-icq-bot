@@ -106,7 +106,17 @@ module.exports.extractUpdatedInfo = (orderDataStrFromDb, orderDataStrFromFtp) =>
     });
 };
 module.exports.parseOrderDataString = (str) => {
+    console.log('String to parse: ', str);
+    if (!str.length) {
+        console.log('Empty string');
+        return {};
+    }
     const orderDataArray = str.split(';');
+    if (!orderDataArray.length) {
+        console.log('Empty array');
+        return {};
+    }
+    console.log('Splitted: ', orderDataArray);
     // console.log('orderDataArray: ', orderDataArray);
     // let orderDataKeys = [
     //   'order',
