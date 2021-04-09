@@ -111,7 +111,7 @@ module.exports.extractUpdatedInfo = (orderDataStrFromDb: string, orderDataStrFro
 
 module.exports.parseOrderDataString = (str: string) => {
 
-  console.log('String to parse: ', str);
+  // console.log('String to parse: ', str);
 
   if(!str.length) {
     console.log('Empty string');
@@ -158,6 +158,9 @@ module.exports.parseOrderDataString = (str: string) => {
     'Дата согласования'
   ];
   return orderDataKeys.reduce((acc: any, key, index) => {
+    if(!orderDataArray[index]) {
+      return acc;
+    }
     acc[key] = orderDataArray[index][0] === "\"" ? orderDataArray[index].slice(1, orderDataArray[index].length - 1) : orderDataArray[index];
     return acc;
   }, {});
