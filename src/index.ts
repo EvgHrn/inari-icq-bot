@@ -90,7 +90,7 @@ const getOrderData = async (orderNumber: number, st: string) => {
     const result = await getRawOrderData(orderNumber, st);
     console.log(`[${new Date().toLocaleString()}] orderDataFromDb: `, result);
     let orderObj = {};
-    if("data" in result) {
+    if(("data" in result) && result.data) {
         try {
             orderObj = orders.parseOrderDataString(result.data);
         } catch (e) {

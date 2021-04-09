@@ -86,7 +86,7 @@ const getOrderData = (orderNumber, st) => __awaiter(void 0, void 0, void 0, func
     const result = yield getRawOrderData(orderNumber, st);
     console.log(`[${new Date().toLocaleString()}] orderDataFromDb: `, result);
     let orderObj = {};
-    if ("data" in result) {
+    if (("data" in result) && result.data) {
         try {
             orderObj = orders.parseOrderDataString(result.data);
         }
