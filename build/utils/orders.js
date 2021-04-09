@@ -116,7 +116,7 @@ module.exports.parseOrderDataString = (str) => {
         console.log('Empty array');
         return {};
     }
-    console.log('Splitted: ', orderDataArray);
+    // console.log('Splitted: ', orderDataArray);
     // console.log('orderDataArray: ', orderDataArray);
     // let orderDataKeys = [
     //   'order',
