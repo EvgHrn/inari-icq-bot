@@ -174,7 +174,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
         }
         else {
             // Existing order
-            console.log(`${nowDateStr} Existing order: `, ordersNumbersArr[i]);
+            // console.log(`${nowDateStr} Existing order: `, ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb = yield db.getOrderByNumber(ordersNumbersArr[i]);
             if (!orderFromDb) {
@@ -215,7 +215,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
                 console.log(`${nowDateStr} Updated order: `, updatedOrder);
             }
             else {
-                console.log(`${nowDateStr} Dates equal, so do nothing`);
+                // console.log(`${nowDateStr} Dates equal, so do nothing`);
             }
         }
     }

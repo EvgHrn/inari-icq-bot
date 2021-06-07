@@ -189,7 +189,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             console.log(`${nowDateStr} Created order in db: `, newOrder);
         } else {
             // Existing order
-            console.log(`${nowDateStr} Existing order: `, ordersNumbersArr[i]);
+            // console.log(`${nowDateStr} Existing order: `, ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb: OrderType = await db.getOrderByNumber(ordersNumbersArr[i]);
             if(!orderFromDb) {
@@ -228,7 +228,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                 const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
                 console.log(`${nowDateStr} Updated order: `, updatedOrder);
             } else {
-                console.log(`${nowDateStr} Dates equal, so do nothing`);
+                // console.log(`${nowDateStr} Dates equal, so do nothing`);
             }
         }
     }
