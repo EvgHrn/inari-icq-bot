@@ -85,6 +85,12 @@ bot.getDispatcher().addHandler(handlerDeleteMessage);
 // Запускаем пулинг для получения команд обработчикам
 bot.startPolling();
 
+setInterval(() => {
+    console.log('Restart polling');
+    bot.stop();
+    bot.startPolling();
+}, 3600000);
+
 const getOrderData = async (orderNumber: number, st: string) => {
     if(!orderNumber) return false;
     const result = await getRawOrderData(orderNumber, st);
