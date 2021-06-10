@@ -226,7 +226,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                     productStr = orderDataObjFromFtp['Название'];
                 }
 
-                let messageStr = `Изменение в заказе ${ordersNumbersArr[i]} ${productStr}:\n\n`;
+                let diffMessageStr = ``;
 
                 const keysArray: string[] = [...Object.keys(orderDataObjFromDb), ...Object.keys(orderDataObjFromFtp)].reduce((acc: string[], key: string) => {
                     if(!acc.includes(key)) {
@@ -243,7 +243,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                         //if diff
                         } else {
                             if(key !== 'Заказчик') { // we dont want to see that diffs
-                                messageStr = `${messageStr}Было:\n${orderDataObjFromDb[key]}\nСтало:\n${orderDataObjFromFtp[key]}`;
+                                diffMessageStr = `${diffMessageStr}Было:\n${key}: ${orderDataObjFromDb[key]}\nСтало:\n${key}: ${orderDataObjFromFtp[key]}`;
                             } else {
                                 return;
                             }
@@ -251,20 +251,24 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                     }
                     //if new key
                     if(Object.keys(orderDataObjFromFtp).includes(key) && !Object.keys(orderDataObjFromDb).includes(key)) {
-                        messageStr = `${messageStr}\nНовая информация:\n${key}: ${orderDataObjFromFtp[key]}`;
+                        diffMessageStr = `${diffMessageStr}\nНовая информация:\n${key}: ${orderDataObjFromFtp[key]}`;
                         return;
                     }
                     if(!Object.keys(orderDataObjFromFtp).includes(key) && Object.keys(orderDataObjFromDb).includes(key)) {
-                        messageStr = `${messageStr}\nУдалена информация:\n${key}: ${orderDataObjFromDb[key]}`;
+                        diffMessageStr = `${diffMessageStr}\nУдалена информация:\n${key}: ${orderDataObjFromDb[key]}`;
                         return;
                     }
                 });
+
+                if(!diffMessageStr.length) {
+                    continue;
+                }
 
                 const usersArr: UserType[] = await db.getUsers();
                 if(!usersArr) continue;
                 const usersWithOrdersUpdatesSubscription = usersArr.filter((user: UserType) => user.subscriptions && (user.subscriptions.includes('ordersUpdates')));
                 usersWithOrdersUpdatesSubscription.forEach((user: UserType) => {
-                    bot.sendText(user.icqId, messageStr);
+                    bot.sendText(user.icqId, `Изменение в заказе ${ordersNumbersArr[i]} ${productStr}:\n\n${diffMessageStr}`);
                 });
                 console.log(`${nowDateStr} Gonna update order on db`);
                 const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
