@@ -170,18 +170,18 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
 
     for(let i = 0; i < ordersNumbersArr.length; i++) {
 
-        const orderObjFromFtp: FileInfo | undefined = ordersArr.find((order: FileInfo) => order.name === (ordersNumbersArr[i].toString()));
-        if(!orderObjFromFtp) {
+        const orderFileInfoObjFromFtp: FileInfo | undefined = ordersArr.find((order: FileInfo) => order.name === (ordersNumbersArr[i].toString()));
+        if(!orderFileInfoObjFromFtp) {
             console.error(`${nowDateStr} No order info for: `, ordersNumbersArr[i]);
             continue;
         }
 
-        // new order
         if(!ordersListFromDb.includes(ordersNumbersArr[i])) {
+            // new order
             console.log(`${nowDateStr} We have new order: `, ordersNumbersArr[i]);
             const obj = await orders.getOrderDataStr(ordersNumbersArr[i], process.env.ST);
             console.log(`${nowDateStr} Order data string: `, obj.data);
-            const dateStr = orderObjFromFtp.rawModifiedAt;
+            const dateStr = orderFileInfoObjFromFtp.rawModifiedAt;
             const date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
             console.log(`${nowDateStr} ModifiedAt for ${ordersNumbersArr[i]}: `, date.toLocaleString());
             console.log(`${nowDateStr} Gonna create order on db`);
@@ -189,14 +189,13 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             console.log(`${nowDateStr} Created order in db: `, newOrder);
         } else {
             // Existing order
-            // console.log(`${nowDateStr} Existing order: `, ordersNumbersArr[i]);
             // compare modifiedAt dates
             const orderFromDb: OrderType = await db.getOrderByNumber(ordersNumbersArr[i]);
             if(!orderFromDb) {
                 continue;
             }
             const orderModifiedAtFromDbDate = orderFromDb.modifiedAt;
-            const dateStr = orderObjFromFtp.rawModifiedAt;
+            const dateStr = orderFileInfoObjFromFtp.rawModifiedAt;
             const orderModifiedAtStrOnFtpDate: Date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
             if(!orderModifiedAtStrOnFtpDate) {
                 console.error(`${nowDateStr} Date parsing error for: `, dateStr);
@@ -204,25 +203,68 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             }
             // console.log('Compare modifiedAt dates: ', orderModifiedAtFromDbDate.toLocaleString(), orderModifiedAtStrOnFtpDate.toLocaleString());
             if(!isEqual(orderModifiedAtFromDbDate, orderModifiedAtStrOnFtpDate)) {
+                // Order file was updated
                 console.log(`${nowDateStr} Dates NOT equal for ${ordersNumbersArr[i]}`);
+
+
                 // @ts-ignore
                 const orderDataStrFromFtp = await getRawOrderData(ordersNumbersArr[i], process.env.ST);
+
                 const diff = orders.extractUpdatedInfo(orderFromDb.dataString, orderDataStrFromFtp.data);
                 console.log(`${nowDateStr} Difference: `, diff);
                 if(diff.updatedPartOfInfoAfter.trim() === diff.updatedPartOfInfoBefore.trim()) {
                     console.log(`${nowDateStr} No difference actually, so do nothing`);
                     continue;
                 }
-                const orderDataObj = orders.parseOrderDataString(orderDataStrFromFtp.data);
+
+                // parse order data strings
+                const orderDataObjFromFtp = orders.parseOrderDataString(orderDataStrFromFtp.data);
+                const orderDataObjFromDb = orders.parseOrderDataString(orderFromDb.dataString);
+
                 let productStr = '';
-                if(orderDataObj && ('Название' in orderDataObj)) {
-                    productStr = orderDataObj['Название'];
+                if(orderDataObjFromFtp && ('Название' in orderDataObjFromFtp)) {
+                    productStr = orderDataObjFromFtp['Название'];
                 }
+
+                let messageStr = `Изменение в заказе ${ordersNumbersArr[i]} ${productStr}:\n\n`;
+
+                const keysArray: string[] = [...Object.keys(orderDataObjFromDb), ...Object.keys(orderDataObjFromFtp)].reduce((acc: string[], key: string) => {
+                    if(!acc.includes(key)) {
+                        acc.push(key);
+                    }
+                    return acc;
+                }, []);
+
+                keysArray.map((key: string) => {
+                    if((key in orderDataObjFromFtp) && (key in orderDataObjFromDb)) {
+                        //if no diff
+                        if(orderDataObjFromFtp[key].trim() === orderDataObjFromDb[key].trim()) {
+                            return;
+                        //if diff
+                        } else {
+                            if(key !== 'Заказчик') { // we dont want to see that diffs
+                                messageStr = `${messageStr}Было:\n${orderDataObjFromDb[key]}\nСтало:\n${orderDataObjFromFtp[key]}`;
+                            } else {
+                                return;
+                            }
+                        }
+                    }
+                    //if new key
+                    if(Object.keys(orderDataObjFromFtp).includes(key) && !Object.keys(orderDataObjFromDb).includes(key)) {
+                        messageStr = `${messageStr}\nНовая информация:\n${key}: ${orderDataObjFromFtp[key]}`;
+                        return;
+                    }
+                    if(!Object.keys(orderDataObjFromFtp).includes(key) && Object.keys(orderDataObjFromDb).includes(key)) {
+                        messageStr = `${messageStr}\nУдалена информация:\n${key}: ${orderDataObjFromDb[key]}`;
+                        return;
+                    }
+                });
+
                 const usersArr: UserType[] = await db.getUsers();
                 if(!usersArr) continue;
                 const usersWithOrdersUpdatesSubscription = usersArr.filter((user: UserType) => user.subscriptions && (user.subscriptions.includes('ordersUpdates')));
                 usersWithOrdersUpdatesSubscription.forEach((user: UserType) => {
-                    bot.sendText(user.icqId, `Изменение в заказе ${ordersNumbersArr[i]} ${productStr}:\n\nБыло:\n ${diff.updatedPartOfInfoBefore}\nСтало:\n ${diff.updatedPartOfInfoAfter}`);
+                    bot.sendText(user.icqId, messageStr);
                 });
                 console.log(`${nowDateStr} Gonna update order on db`);
                 const updatedOrder = await db.updateOrder(ordersNumbersArr[i], orderDataStrFromFtp.data, orderModifiedAtStrOnFtpDate);
