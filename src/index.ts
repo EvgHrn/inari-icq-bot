@@ -87,7 +87,7 @@ bot.startPolling();
 
 setInterval(() => {
     console.log('Restart polling');
-    bot.stop();
+    // bot.stop();
     bot.startPolling();
 }, 3600000);
 
