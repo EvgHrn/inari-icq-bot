@@ -243,7 +243,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
                         //if diff
                         } else {
                             if(key !== 'Заказчик') { // we dont want to see that diffs
-                                diffMessageStr = `${diffMessageStr}Было:\n${key}: ${orderDataObjFromDb[key]}\nСтало:\n${key}: ${orderDataObjFromFtp[key]}`;
+                                diffMessageStr = `${diffMessageStr}Было:\n${key}: ${orderDataObjFromDb[key]}\nСтало:\n${key}: ${orderDataObjFromFtp[key]}\n\n`;
                             } else {
                                 return;
                             }
