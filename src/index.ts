@@ -304,7 +304,8 @@ setInterval(async() => {
         console.error(`[${new Date().toLocaleString()}] Duplicate file name: `, a.name);
         return 0;
     });
-    const ordersArrToUpdate: FileInfo[] = ordersInfoArr.slice(ordersInfoArr.length - 1000);
+
+    const ordersArrToUpdate: FileInfo[] = (ordersInfoArr.length > 1000) ? ordersInfoArr.slice(ordersInfoArr.length - 1000) : ordersInfoArr;
     console.log(`[${new Date().toLocaleString()}] On top of priority orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
     await updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;

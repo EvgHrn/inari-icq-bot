@@ -281,7 +281,7 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
         console.error(`[${new Date().toLocaleString()}] Duplicate file name: `, a.name);
         return 0;
     });
-    const ordersArrToUpdate = ordersInfoArr.slice(ordersInfoArr.length - 1000);
+    const ordersArrToUpdate = (ordersInfoArr.length > 1000) ? ordersInfoArr.slice(ordersInfoArr.length - 1000) : ordersInfoArr;
     console.log(`[${new Date().toLocaleString()}] On top of priority orders: `, ordersArrToUpdate.map((order) => parseInt(order.name)));
     yield updateOrders(ordersArrToUpdate);
     onPriorOrdersFilesScanning = false;
