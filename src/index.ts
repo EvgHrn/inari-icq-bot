@@ -182,7 +182,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             const obj = await orders.getOrderDataStr(ordersNumbersArr[i], process.env.ST);
             console.log(`${nowDateStr} Order data string: `, obj.data);
             const dateStr = orderFileInfoObjFromFtp.rawModifiedAt;
-            const date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            const date = parse(dateStr, 'MMM dd HH:mm', new Date());
             console.log(`${nowDateStr} ModifiedAt for ${ordersNumbersArr[i]}: `, date.toLocaleString());
             console.log(`${nowDateStr} Gonna create order on db`);
             const newOrder = await db.createOrder(ordersNumbersArr[i], obj.data, date);
@@ -196,7 +196,7 @@ const updateOrders = async(ordersArr: FileInfo[]) => {
             }
             const orderModifiedAtFromDbDate = orderFromDb.modifiedAt;
             const dateStr = orderFileInfoObjFromFtp.rawModifiedAt;
-            const orderModifiedAtStrOnFtpDate: Date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            const orderModifiedAtStrOnFtpDate: Date = parse(dateStr, 'MMM dd HH:mm', new Date());
             if(!orderModifiedAtStrOnFtpDate) {
                 console.error(`${nowDateStr} Date parsing error for: `, dateStr);
                 continue;
@@ -319,6 +319,7 @@ setInterval(async() => {
     onOtherOrdersFilesScanning = true;
     // get files list
     const ordersInfoArr = await orders.getOrdersInfoFromFtp(60, process.env.ST);
+    console.log(`[${new Date().toLocaleString()}] ordersInfoArr length: `, ordersInfoArr.length);
     if(!ordersInfoArr) {
         return;
     }

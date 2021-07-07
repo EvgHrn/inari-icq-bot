@@ -166,7 +166,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
             const obj = yield orders.getOrderDataStr(ordersNumbersArr[i], process.env.ST);
             console.log(`${nowDateStr} Order data string: `, obj.data);
             const dateStr = orderFileInfoObjFromFtp.rawModifiedAt;
-            const date = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            const date = parse(dateStr, 'MMM dd HH:mm', new Date());
             console.log(`${nowDateStr} ModifiedAt for ${ordersNumbersArr[i]}: `, date.toLocaleString());
             console.log(`${nowDateStr} Gonna create order on db`);
             const newOrder = yield db.createOrder(ordersNumbersArr[i], obj.data, date);
@@ -181,7 +181,7 @@ const updateOrders = (ordersArr) => __awaiter(void 0, void 0, void 0, function* 
             }
             const orderModifiedAtFromDbDate = orderFromDb.modifiedAt;
             const dateStr = orderFileInfoObjFromFtp.rawModifiedAt;
-            const orderModifiedAtStrOnFtpDate = parse(dateStr, 'MM-dd-yy hh:mmaa', new Date());
+            const orderModifiedAtStrOnFtpDate = parse(dateStr, 'MMM dd HH:mm', new Date());
             if (!orderModifiedAtStrOnFtpDate) {
                 console.error(`${nowDateStr} Date parsing error for: `, dateStr);
                 continue;
@@ -294,6 +294,7 @@ setInterval(() => __awaiter(void 0, void 0, void 0, function* () {
     onOtherOrdersFilesScanning = true;
     // get files list
     const ordersInfoArr = yield orders.getOrdersInfoFromFtp(60, process.env.ST);
+    console.log(`[${new Date().toLocaleString()}] ordersInfoArr length: `, ordersInfoArr.length);
     if (!ordersInfoArr) {
         return;
     }
