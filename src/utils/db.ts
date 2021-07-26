@@ -1,4 +1,6 @@
 import {FileInfo} from "./orders";
+import {SubscriptionType} from "../types/SubscriptionType";
+import {UserType} from "../types/UserType";
 
 require('dotenv').config();
 const mongoose = require('mongoose');
@@ -23,7 +25,9 @@ const userSchema = new mongoose.Schema({
         unique: true
     },
     subscriptions: {
-        type: [String],
+        type: [{
+
+        }],
         require: false,
     }
 });
@@ -132,16 +136,8 @@ module.exports.getOrdersListFromDb = async(): Promise<number[] | boolean> => {
 
 };
 
-export interface UserType {
-    name: string,
-    icqId: string,
-    subscriptions?: Subscription[]
-}
-
 export interface OrderType {
     number: number,
     dataString: string,
     modifiedAt: Date
 }
-
-export type Subscription = 'ordersUpdates';

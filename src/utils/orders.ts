@@ -156,7 +156,11 @@ module.exports.parseOrderDataString = (str: string) => {
     'Филиал',
     'Доставка',
     'Заказчик',
-    'Дата согласования'
+    'Дата согласования',
+    'Стоимость',
+    'Тип-1',
+    'Тип-2',
+    'Готовность'
   ];
   return orderDataKeys.reduce((acc: any, key, index) => {
     if(!orderDataArray[index]) {
@@ -166,37 +170,6 @@ module.exports.parseOrderDataString = (str: string) => {
     return acc;
   }, {});
 };
-
-
-// module.exports.getOrderFileModifiedAtStr = async(orderNumber: number, st: string): Promise<string | boolean> => {
-//   const queue = qs.stringify({
-//     "st": st,
-//     "orderNumber": orderNumber
-//   });
-//
-//   const url = `${process.env.ORDERSWORKER_ADDR}getOrderFileModifiedAtStr?${queue}`;
-//
-//   try {
-//     return await fetch(url)
-//       .then((response: any) => {
-//         // console.log("Order ModifiedAtStr response: ", response);
-//         return response.text();
-//       })
-//       .then((text: string) => {
-//         console.log("Order ModifiedAtStr: ", text);
-//         return text;
-//       });
-//   } catch (e) {
-//     console.error("getOrderFileModifiedAtStr error: ", e);
-//     return false;
-//   }
-// };
-// module.exports.getOrdersFromFtp = async (periodDays: number, st: string) => {
-//
-//   // @ts-ignore
-//   const ordersInfoArr = await this.getOrdersInfoFromFtp(periodDays, st);
-//   return ordersInfoArr.map((orderInfo: any) => parseInt(orderInfo.name));
-// };
 
 interface UnixPermissions {
   Read: number;
