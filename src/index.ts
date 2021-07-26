@@ -115,7 +115,7 @@ const getRawOrderData = async(orderNumber: number, st: string) => {
         "orderNumber": orderNumber
     });
 
-    const url = `${process.env.ORDERSWORKER_ADDR}?${queue}`;
+    const url = `${process.env.ORDERSWORKER_ADDR}getOrderData?${queue}`;
 
     try {
         return await fetch(url)
